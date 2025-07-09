@@ -4,6 +4,7 @@ const dbConfig = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   },
+  jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret_key',
 };
 
 export default dbConfig;

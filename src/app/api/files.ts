@@ -1,32 +1,34 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import fileService from '../../../lib/services/fileService';
+// import { NextApiRequest, NextApiResponse } from 'next';
+// import { uploadFile } from './controllers/fileController';
+// import multer from 'multer';
+// import nextConnect from 'next-connect';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { method } = req;
+// const upload = multer();
 
-  switch (method) {
-    case 'POST':
-      try {
-        const { file } = req.body;
-        const result = await fileService.uploadFile(file);
-        res.status(200).json({ success: true, data: result });
-      } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error' });
-      }
-      break;
+// export const config = {
+//   api: {
+//     bodyParser: false, // Disable body parsing, since we're using multer
+//   },
+// };
 
-    case 'GET':
-      try {
-        const { fileId } = req.query;
-        const file = await fileService.getFile(fileId as string);
-        res.status(200).json({ success: true, data: file });
-      } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error' });
-      }
-      break;
+// declare module 'next-connect' {
+//   interface Request {
+//     file?: Express.Multer.File;
+//   }
+// }
 
-    default:
-      res.setHeader('Allow', ['POST', 'GET']);
-      res.status(405).end(`Method ${method} Not Allowed`);
-  }
-}
+// const handler = nextConnect()
+//   .use(upload.single('file'))
+//   .post(async (req: NextApiRequest, res: NextApiResponse) => {
+//     try {
+//       if (!req.file) {
+//         return res.status(400).json({ success: false, message: 'No file uploaded' });
+//       }
+//       await uploadFile(req, res);
+//     } catch (error) {
+//       console.error(error);
+//       res.status(500).json({ success: false, message: 'Server error' });
+//     }
+//   });
+
+// export default handler;

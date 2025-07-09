@@ -1,32 +1,26 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import dataService from '../../../lib/services/dataService.ts';
+// import type { NextApiRequest, NextApiResponse } from 'next';
+// import { processFile } from '../../../lib/services/dataService';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { method } = req;
+// // Define the extended request type with file
+// interface MulterRequest extends NextApiRequest {
+//   file?: Express.Multer.File;
+// }
 
-  switch (method) {
-    case 'POST':
-      try {
-        const { data } = req.body;
-        const result = await dataService.processData(data);
-        res.status(200).json({ success: true, data: result });
-      } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error' });
-      }
-      break;
+// export default async function handler(req: MulterRequest, res: NextApiResponse) {
+//   if (req.method === 'POST') {
+//     try {
+//       const file = req.file;
+//       if (!file) {
+//         return res.status(400).json({ error: 'No file uploaded' });
+//       }
 
-    case 'GET':
-      try {
-        const { dataId } = req.query;
-        const data = await dataService.getData(dataId as string);
-        res.status(200).json({ success: true, data: data });
-      } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error' });
-      }
-      break;
-
-    default:
-      res.setHeader('Allow', ['POST', 'GET']);
-      res.status(405).end(`Method ${method} Not Allowed`);
-  }
-}
+//       const processedData = await processFile(file);
+//       return res.status(200).json(processedData);
+//     } catch (error) {
+//       console.error('Error processing data:', error);
+//       return res.status(500).json({ error: 'Failed to process data' });
+//     }
+//   } else {
+//     return res.status(405).json({ error: 'Method not allowed' });
+//   }
+// }

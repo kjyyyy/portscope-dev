@@ -1,7 +1,7 @@
 export interface ProcessedData {
   id: string;
   name: string;
-  content: any;
+  content: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
   status: 'pending' | 'processed' | 'failed';

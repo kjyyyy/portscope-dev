@@ -23,7 +23,7 @@ const FileUpload: React.FC = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch(API_ENDPOINTS.FILES.UPLOAD, {
+      const response = await fetch(API_ENDPOINTS.UPLOAD_FILE, {
         method: 'POST',
         body: formData,
       });
@@ -34,7 +34,7 @@ const FileUpload: React.FC = () => {
 
       const result = await response.json();
       console.log('File uploaded successfully:', result);
-    } catch (err) {
+    } catch {
       setError('Failed to upload file');
     } finally {
       setUploading(false);
