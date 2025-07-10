@@ -1,13 +1,31 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import MetricCard from '@/components/ui/MetricCard';
 import ChartCard from '@/components/ui/ChartCard';
 import FileDropZone from '@/components/ui/FileDropZone';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 const companies = ['Acme Capital', 'Blue Ocean Ventures', 'FinTech Growth'];
+
+function OnboardButton({ className }: { className?: string }) {
+  const router = useRouter();
+
+  return (
+    <div className={cn('flex justify-end', className)}>
+      <Button
+        onClick={() => router.push('/dashboard/portfolio/new')}
+        className="bg-primary text-white hover:bg-primary/90"
+      >
+        + Onboard Portfolio Company
+      </Button>
+    </div>
+  );
+}
 
 export default function OverviewPage() {
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
@@ -32,11 +50,13 @@ export default function OverviewPage() {
         </Select>
       </div>
 
+      <OnboardButton className="mt-2" />
+
       {selectedCompany && (
         <Tabs defaultValue="metrics">
           <TabsList>
             <TabsTrigger value="metrics">Financial Metrics</TabsTrigger>
-            <TabsTrigger value="upload">Documents</TabsTrigger>
+            <TabsTrigger value="upload">Data Collection</TabsTrigger>
           </TabsList>
 
           <TabsContent value="metrics">

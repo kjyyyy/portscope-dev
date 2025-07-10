@@ -10,7 +10,7 @@ const navItems = [
 export default function SidebarNav() {
   return (
     <aside className="w-64 bg-white border-r p-4 space-y-6">
-      <h2 className="text-lg font-bold">PE Monitor</h2>
+      <h2 className="text-lg font-bold">PortScope</h2>
       <nav className="space-y-2">
         {navItems.map((item) => (
           <Link key={item.href} href={item.href} className="flex items-center gap-3 text-sm hover:text-primary">
