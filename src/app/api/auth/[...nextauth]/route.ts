@@ -7,16 +7,17 @@ import { NextAuthOptions } from 'next-auth';
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      clientId: process.env.GOOGLE_CLIENT_ID || 'demo-client-id',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'demo-client-secret',
     }),
     GitHubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID || '',
-      clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+      clientId: process.env.GITHUB_CLIENT_ID || 'demo-client-id',
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || 'demo-client-secret',
     }),
   ],
   pages: {
     signIn: '/',
+    error: '/', // Redirect errors back to home page
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
@@ -25,7 +26,13 @@ export const authOptions: NextAuthOptions = {
     async session({ session }) {
       return session;
     },
+    async signIn({ user, account, profile }) {
+      // In demo mode, always allow sign in
+      return true;
+    },
   },
+  secret: process.env.NEXTAUTH_SECRET || 'demo-secret-key',
+  debug: process.env.NODE_ENV === 'development',
 };
 
 const handler = NextAuth(authOptions);
