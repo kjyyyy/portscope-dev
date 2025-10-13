@@ -30,31 +30,43 @@ Open [http://localhost:3000](http://localhost:3000) to see the application.
 - **Demo Mode**: Click "Launch Demo Mode" to explore without authentication
 - **Secure Access**: Use password `portscope2024` for authenticated access
 
-## Deployment
+## 🚀 Deployment
 
-### Deploy to Vercel
+### Quick Deploy to Vercel
 
-1. **Connect to Vercel**:
+**Your code is already pushed to GitHub**: `https://github.com/kjyyyy/portscope-dev`
+
+1. **Go to [vercel.com](https://vercel.com)**
+2. **Sign in with GitHub**
+3. **Import repository**: `kjyyyy/portscope-dev`
+4. **Add Environment Variables**:
    ```bash
-   npx vercel
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+   NEXT_PUBLIC_APP_NAME=PortScope Dev
+   NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+   APP_PASSWORD=portscope2024
    ```
+5. **Deploy!**
 
-2. **Environment Variables** (optional):
-   - `NEXT_PUBLIC_APP_NAME`: Your app name
-   - `NEXT_PUBLIC_APP_URL`: Your production URL
+### Prerequisites (Required Before Deployment)
 
-3. **Deploy**:
-   ```bash
-   npm run build
-   ```
+1. **Set up Supabase Database**:
+   - Run the SQL schema from `supabase/schema.sql`
+   - Create storage buckets: `documents`, `company-docs`, `financial-reports`, `legal-documents`
+
+2. **Get Supabase Credentials**:
+   - Go to [supabase.com/dashboard](https://supabase.com/dashboard)
+   - Copy Project URL and anon key
+
+### Detailed Deployment Guide
+
+See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for complete instructions.
 
 ### Manual Deployment
 
 ```bash
-# Build the application
 npm run build
-
-# Start production server
 npm start
 ```
 
