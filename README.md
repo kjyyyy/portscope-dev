@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PortScope Dev
+
+A professional portfolio management platform built with Next.js 15, TypeScript, and Tailwind CSS.
+
+## Features
+
+- **Simple Authentication**: Password-based access control
+- **Demo Mode**: Explore the full UI without authentication
+- **Portfolio Dashboard**: Overview of investments and performance
+- **Analytics**: Advanced charts and performance metrics
+- **Valuations**: Track and manage company valuations
+- **Modern UI**: Built with Radix UI and Tailwind CSS
 
 ## Getting Started
 
-First, run the development server:
+### Development
 
 ```bash
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Authentication
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Demo Mode**: Click "Launch Demo Mode" to explore without authentication
+- **Secure Access**: Use password `portscope2024` for authenticated access
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
+### Deploy to Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Connect to Vercel**:
+   ```bash
+   npx vercel
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. **Environment Variables** (optional):
+   - `NEXT_PUBLIC_APP_NAME`: Your app name
+   - `NEXT_PUBLIC_APP_URL`: Your production URL
 
-## Deploy on Vercel
+3. **Deploy**:
+   ```bash
+   npm run build
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Manual Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+# Build the application
+npm run build
+
+# Start production server
+npm start
+```
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js app router
+│   ├── dashboard/         # Dashboard pages
+│   ├── api/              # API routes
+│   └── page.tsx          # Home page
+├── components/           # React components
+│   └── ui/              # UI components
+└── lib/                 # Utilities
+```
+
+## Technologies
+
+- **Next.js 15** - React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **Radix UI** - Accessible components
+- **Recharts** - Data visualization
+- **Lucide React** - Icons
+
+## Customization
+
+### Change Password
+Update the `APP_PASSWORD` constant in `src/app/page.tsx`:
+
+```typescript
+const APP_PASSWORD = 'your-new-password';
+```
+
+### Add Features
+- Add new dashboard pages in `src/app/dashboard/`
+- Create new components in `src/components/`
+- Add API routes in `src/app/api/`
+
+## License
+
+MIT License - see LICENSE file for details.

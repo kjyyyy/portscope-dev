@@ -3,7 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Home, BarChart3, Calculator, Settings, LogOut } from 'lucide-react';
+import { Home, BarChart3, Calculator, Settings, LogOut, Building2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function Navigation() {
@@ -12,8 +12,9 @@ export default function Navigation() {
   const [isDemoMode, setIsDemoMode] = useState(false);
 
   useEffect(() => {
-    const demoMode = localStorage.getItem('demoMode') === 'true';
-    setIsDemoMode(demoMode);
+    const demoMode = document.cookie.includes('demoMode=true');
+    const authenticated = document.cookie.includes('authenticated=true');
+    setIsDemoMode(demoMode || authenticated);
   }, []);
 
   if (!isDemoMode || pathname === '/') {
@@ -22,12 +23,14 @@ export default function Navigation() {
 
   const navigationItems = [
     { name: 'Dashboard', path: '/dashboard', icon: Home },
+    { name: 'Portfolio', path: '/dashboard/portfolio', icon: Building2 },
     { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Valuations', path: '/dashboard/valuations', icon: Calculator },
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('demoMode');
+    document.cookie = 'demoMode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'authenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     router.push('/');
   };
 

@@ -6,47 +6,46 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { FcGoogle } from 'react-icons/fc';
-import { FaGithub } from 'react-icons/fa';
-import { Play, ArrowRight } from 'lucide-react';
+import { Play, ArrowRight, Lock } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
 export default function HomePage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Simple password authentication
+  const APP_PASSWORD = 'portscope2024'; // You can change this password
+
+  const handleSignIn = async () => {
+    setIsLoading(true);
+    setError('');
+    
+    // Simple password check
+    if (password === APP_PASSWORD) {
+      // Set authentication cookie
+      document.cookie = 'authenticated=true; path=/; max-age=86400'; // 24 hours
+      document.cookie = 'demoMode=false; path=/; max-age=86400';
+      router.push('/dashboard');
+    } else {
+      setError('Invalid password. Please try again.');
+    }
+    setIsLoading(false);
+  };
 
   const handleDemoMode = () => {
-    // Store demo mode in localStorage
-    localStorage.setItem('demoMode', 'true');
+    // Set demo mode cookie
+    document.cookie = 'demoMode=true; path=/; max-age=86400'; // 24 hours
+    document.cookie = 'authenticated=true; path=/; max-age=86400';
     router.push('/dashboard');
   };
 
-  const handleSignIn = () => {
-    // In demo mode, always allow access regardless of input
-    localStorage.setItem('demoMode', 'true');
-    router.push('/dashboard');
-  };
-
-  const handleGoogleSignIn = () => {
-    alert('Demo Mode: Google authentication would be configured in production');
-    // For demo, allow access
-    localStorage.setItem('demoMode', 'true');
-    router.push('/dashboard');
-  };
-
-  const handleGithubSignIn = () => {
-    alert('Demo Mode: GitHub authentication would be configured in production');
-    // For demo, allow access
-    localStorage.setItem('demoMode', 'true');
-    router.push('/dashboard');
-  };
-
-  const handleSignUp = () => {
-    // For demo, allow access without authentication
-    localStorage.setItem('demoMode', 'true');
-    router.push('/dashboard');
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSignIn();
+    }
   };
 
   return (
@@ -82,57 +81,27 @@ export default function HomePage() {
           <Separator className="my-6" />
           
           <div className="text-center">
-            <p className="text-sm font-medium text-muted-foreground mb-4">Production Authentication</p>
+            <p className="text-sm font-medium text-muted-foreground mb-4">Secure Access</p>
           </div>
-          
-          <div className="space-y-3">
-            <Button 
-              variant="outline" 
-              className="w-full flex items-center gap-3 justify-center h-11" 
-              onClick={handleGoogleSignIn}
-            >
-              <FcGoogle className="h-5 w-5" /> 
-              Continue with Google
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full flex items-center gap-3 justify-center h-11" 
-              onClick={handleGithubSignIn}
-            >
-              <FaGithub className="h-5 w-5" /> 
-              Continue with GitHub
-            </Button>
-          </div>
-          
-          <Separator className="my-6" />
           
           <div className="space-y-4">
             <div>
-              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="you@example.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium">Access Password</Label>
               <Input 
                 id="password" 
                 type="password" 
-                placeholder="••••••••" 
+                placeholder="Enter access password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyPress={handleKeyPress}
                 className="mt-1"
               />
+              {error && (
+                <p className="text-sm text-red-600 mt-1">{error}</p>
+              )}
             </div>
-            <div className="text-sm text-right">
-              <button onClick={() => alert('Demo Mode: Password recovery would be configured in production')} className="text-blue-600 hover:underline">
-                Forgot password?
-              </button>
+            <div className="text-sm text-center text-muted-foreground">
+              <p>Password: <code className="bg-gray-100 px-2 py-1 rounded text-xs">portscope2024</code></p>
             </div>
           </div>
         </CardContent>
@@ -141,15 +110,10 @@ export default function HomePage() {
           <Button 
             className="w-full h-11 bg-blue-600 hover:bg-blue-700" 
             onClick={handleSignIn}
+            disabled={isLoading}
           >
-            Sign In
-          </Button>
-          <Button 
-            variant="ghost" 
-            className="text-sm text-gray-500 hover:text-gray-700" 
-            onClick={handleSignUp}
-          >
-            No account yet? Sign up
+            <Lock className="h-4 w-4 mr-2" />
+            {isLoading ? 'Signing In...' : 'Sign In'}
           </Button>
         </CardFooter>
       </Card>

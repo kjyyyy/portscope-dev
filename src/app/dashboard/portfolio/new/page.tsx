@@ -1,6 +1,5 @@
-// app/dashboard/portfolio/new/page.tsx
 import CompanyForm from '@/components/ui/CompanyForm';
 
-export default function NewPortfolioPage() {
+export default function NewCompanyPage() {
   return <CompanyForm />;
 }

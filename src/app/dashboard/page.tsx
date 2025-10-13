@@ -38,7 +38,7 @@ export default function OverviewPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const demoMode = localStorage.getItem('demoMode') === 'true';
+    const demoMode = document.cookie.includes('demoMode=true');
     setIsDemoMode(demoMode);
   }, []);
 

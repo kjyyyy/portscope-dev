@@ -62,7 +62,7 @@ export default function ValuationsPage() {
   const [isDemoMode, setIsDemoMode] = useState(false);
 
   useEffect(() => {
-    const demoMode = localStorage.getItem('demoMode') === 'true';
+    const demoMode = document.cookie.includes('demoMode=true');
     setIsDemoMode(demoMode);
   }, []);
 

@@ -1,0 +1,116 @@
+#!/usr/bin/env node
+
+const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config({ path: '.env' });
+
+async function setupStorage() {
+  console.log('🔧 Setting up Supabase Storage Buckets...\n');
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('❌ Missing Supabase environment variables!');
+    process.exit(1);
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  try {
+    // List existing buckets
+    console.log('📋 Checking existing buckets...');
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error('❌ Error listing buckets:', listError.message);
+      return;
+    }
+
+    console.log(`Found ${buckets.length} existing buckets:`);
+    buckets.forEach(bucket => {
+      console.log(`  📁 ${bucket.name} (${bucket.public ? 'public' : 'private'})`);
+    });
+
+    // Create required buckets
+    const requiredBuckets = [
+      { name: 'documents', public: true },
+      { name: 'company-docs', public: false },
+      { name: 'financial-reports', public: false },
+      { name: 'legal-documents', public: false }
+    ];
+
+    console.log('\n🔧 Creating required buckets...');
+
+    for (const bucketConfig of requiredBuckets) {
+      const existingBucket = buckets.find(b => b.name === bucketConfig.name);
+      
+      if (existingBucket) {
+        console.log(`✅ ${bucketConfig.name} already exists`);
+        continue;
+      }
+
+      try {
+        const { data, error } = await supabase.storage
+          .createBucket(bucketConfig.name, {
+            public: bucketConfig.public,
+            fileSizeLimit: 50 * 1024 * 1024 // 50MB
+          });
+
+        if (error) {
+          console.log(`⚠️  ${bucketConfig.name}: ${error.message}`);
+        } else {
+          console.log(`✅ Created ${bucketConfig.name} bucket`);
+        }
+      } catch (err) {
+        console.log(`⚠️  ${bucketConfig.name}: ${err.message}`);
+      }
+    }
+
+    // Test file upload
+    console.log('\n🧪 Testing file upload...');
+    try {
+      const testContent = 'Test document for PortScope Dev';
+      const testFileName = `test-${Date.now()}.txt`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(`test/${testFileName}`, testContent, {
+          contentType: 'text/plain'
+        });
+
+      if (uploadError) {
+        console.log('⚠️  Upload test failed:', uploadError.message);
+      } else {
+        console.log('✅ Upload test successful');
+        
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('documents')
+          .getPublicUrl(`test/${testFileName}`);
+        
+        console.log(`🔗 Test file URL: ${urlData.publicUrl}`);
+
+        // Clean up
+        const { error: deleteError } = await supabase.storage
+          .from('documents')
+          .remove([`test/${testFileName}`]);
+        
+        if (!deleteError) {
+          console.log('🧹 Test file cleaned up');
+        }
+      }
+    } catch (err) {
+      console.log('⚠️  Upload test error:', err.message);
+    }
+
+    console.log('\n🎉 Storage setup completed!');
+    console.log('\n📝 Next steps:');
+    console.log('1. Set up the database schema (run supabase/schema.sql in your Supabase dashboard)');
+    console.log('2. Start your app: npm run dev');
+
+  } catch (error) {
+    console.error('❌ Storage setup failed:', error.message);
+  }
+}
+
+setupStorage();

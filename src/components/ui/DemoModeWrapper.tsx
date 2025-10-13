@@ -14,12 +14,13 @@ export default function DemoModeWrapper({ children }: DemoModeWrapperProps) {
   const [showDemoBanner, setShowDemoBanner] = useState(true);
 
   useEffect(() => {
-    const demoMode = localStorage.getItem('demoMode') === 'true';
+    const demoMode = document.cookie.includes('demoMode=true');
     setIsDemoMode(demoMode);
   }, []);
 
   const exitDemoMode = () => {
-    localStorage.removeItem('demoMode');
+    document.cookie = 'demoMode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'authenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     setIsDemoMode(false);
     window.location.href = '/';
   };
