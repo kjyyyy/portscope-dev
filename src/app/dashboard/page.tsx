@@ -13,7 +13,7 @@ import FormulaBuilder from '@/components/ui/FormulaBuilder';
 import VersionControl from '@/components/ui/VersionControl';
 import FileDropZone from '@/components/ui/FileDropZone';
 import { cn } from '@/lib/utils';
-import { Building2, DollarSign, TrendingUp, Users, BarChart3, Calculator, GitBranch, ArrowRight } from 'lucide-react';
+import { Building2, DollarSign, TrendingUp, Users, BarChart3, Calculator, ArrowRight } from 'lucide-react';
 
 const companies = ['Acme Capital', 'Blue Ocean Ventures', 'FinTech Growth'];
 

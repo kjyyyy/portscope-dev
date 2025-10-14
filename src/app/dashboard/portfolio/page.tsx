@@ -11,7 +11,6 @@ import {
   Building2, 
   DollarSign, 
   TrendingUp, 
-  Users, 
   Search, 
   Filter,
   Plus,

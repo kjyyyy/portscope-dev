@@ -203,7 +203,7 @@ export const portfolioService = {
     const filePath = `documents/${metadata.portfolio_company_id}/${fileName}`
     
     // Upload file to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('documents')
       .upload(filePath, file)
     

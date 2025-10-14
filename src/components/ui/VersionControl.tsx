@@ -88,7 +88,7 @@ export default function VersionControl() {
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {versions.map((version, index) => (
+        {versions.map((version) => (
           <div key={version.id} className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex items-center gap-3">
               <GitCommit className="h-4 w-4 text-muted-foreground" />

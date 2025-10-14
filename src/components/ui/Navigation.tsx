@@ -2,8 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Home, BarChart3, Calculator, Settings, LogOut, Building2 } from 'lucide-react';
+import { Home, BarChart3, Calculator, LogOut, Building2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function Navigation() {

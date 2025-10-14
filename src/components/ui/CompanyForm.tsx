@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -101,7 +101,7 @@ export default function CompanyForm() {
     notes: ''
   });
 
-  const handleInputChange = (field: keyof CompanyFormData, value: any) => {
+  const handleInputChange = (field: keyof CompanyFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -134,6 +134,8 @@ export default function CompanyForm() {
     try {
       const companyData = {
         ...formData,
+        stage: formData.stage as 'seed' | 'series_a' | 'series_b' | 'growth' | 'late_stage' | undefined,
+        investment_type: formData.investment_type as 'equity' | 'debt' | 'convertible' | 'preferred' | undefined,
         key_contacts: contacts,
         created_by: 'user-id' // This should come from auth context
       };
@@ -158,10 +160,10 @@ export default function CompanyForm() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <Card>
-        <CardHeader>
+      <CardHeader>
           <CardTitle className="text-2xl font-bold">Onboard New Portfolio Company</CardTitle>
           <p className="text-muted-foreground">Complete the form to add a new company to your portfolio</p>
-        </CardHeader>
+      </CardHeader>
         
         <CardContent>
           {/* Progress Steps */}
@@ -195,7 +197,7 @@ export default function CompanyForm() {
             })}
           </div>
 
-          <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
             <Tabs value={currentStep.toString()} className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="1">Basic Info</TabsTrigger>
@@ -501,38 +503,38 @@ export default function CompanyForm() {
                   {showContactForm && (
                     <Card className="p-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
+          <div>
                           <Label>Name *</Label>
                           <Input
                             value={newContact.name || ''}
                             onChange={(e) => setNewContact(prev => ({ ...prev, name: e.target.value }))}
                           />
-                        </div>
-                        <div>
+          </div>
+          <div>
                           <Label>Title</Label>
                           <Input
                             value={newContact.title || ''}
                             onChange={(e) => setNewContact(prev => ({ ...prev, title: e.target.value }))}
                           />
-                        </div>
-                        <div>
+          </div>
+          <div>
                           <Label>Email</Label>
                           <Input
                             type="email"
                             value={newContact.email || ''}
                             onChange={(e) => setNewContact(prev => ({ ...prev, email: e.target.value }))}
                           />
-                        </div>
-                        <div>
+          </div>
+          <div>
                           <Label>Phone</Label>
                           <Input
                             value={newContact.phone || ''}
                             onChange={(e) => setNewContact(prev => ({ ...prev, phone: e.target.value }))}
                           />
-                        </div>
-                        <div>
+          </div>
+          <div>
                           <Label>Role</Label>
-                          <Select value={newContact.role || ''} onValueChange={(value) => setNewContact(prev => ({ ...prev, role: value as any }))}>
+                          <Select value={newContact.role || ''} onValueChange={(value) => setNewContact(prev => ({ ...prev, role: value as 'ceo' | 'cfo' | 'board_member' | 'key_employee' | 'advisor' }))}>
                             <SelectTrigger>
                               <SelectValue placeholder="Select role" />
                             </SelectTrigger>
@@ -615,10 +617,10 @@ export default function CompanyForm() {
                   </Button>
                 )}
               </div>
-            </div>
+          </div>
           </form>
         </CardContent>
-      </Card>
+    </Card>
     </div>
   );
 }

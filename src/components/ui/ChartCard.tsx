@@ -22,10 +22,10 @@ const quarterlyData = [
 type Props = {
   title: string;
   type?: "line" | "bar";
-  data?: any[];
+  data?: Array<Record<string, unknown>>;
   dataKey?: string;
   xAxisKey?: string;
-  formatter?: (value: any) => [string, string];
+  formatter?: (value: unknown) => [string, string];
 };
 
 export default function ChartCard({ 

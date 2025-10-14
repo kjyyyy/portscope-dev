@@ -14,17 +14,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { 
   Upload, 
   FileText, 
-  Calendar, 
-  Tag, 
-  User, 
-  Shield, 
-  Search, 
-  Filter,
   Download,
   Eye,
   Trash2,
   X,
-  Plus
+  Search
 } from 'lucide-react';
 import { portfolioService, type Document } from '@/lib/supabase';
 
@@ -95,7 +89,9 @@ export default function DocumentUpload({ companyId, onUploadComplete }: Document
         const documentData = {
           ...metadata,
           portfolio_company_id: companyId,
-          uploaded_by: 'user-id' // This should come from auth context
+          uploaded_by: 'user-id', // This should come from auth context
+          document_type: (metadata.document_type || 'other') as 'investment_memo' | 'financials' | 'valuation_report' | 'board_materials' | 'legal' | 'other',
+          confidentiality_level: (metadata.confidentiality_level || 'internal') as 'public' | 'internal' | 'confidential' | 'restricted'
         };
         
         const uploadedDocument = await portfolioService.uploadDocument(file, documentData);

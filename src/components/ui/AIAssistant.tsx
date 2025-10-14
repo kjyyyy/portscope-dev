@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, Sparkles, Code, TrendingUp } from "lucide-react";
+import { Bot, Send, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface ChatMessage {
