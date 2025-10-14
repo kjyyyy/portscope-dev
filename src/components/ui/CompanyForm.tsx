@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, Building2, DollarSign, Users, TrendingUp } from 'lucide-react';
+import { X, Plus, Building2, DollarSign, Users, TrendingUp, Upload, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { portfolioService, type Contact } from '@/lib/supabase';
 
 interface CompanyFormData {
@@ -66,6 +66,13 @@ export default function CompanyForm() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [newContact, setNewContact] = useState<Partial<Contact>>({});
   const [showContactForm, setShowContactForm] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{
+    id: string;
+    file: File;
+    documentType: string;
+    description: string;
+    asOfDate: string;
+  }>>([]);
   
   const [formData, setFormData] = useState<CompanyFormData>({
     company_name: '',
@@ -127,6 +134,34 @@ export default function CompanyForm() {
     setFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      Array.from(files).forEach(file => {
+        if (file.type.includes('spreadsheet') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+          const fileId = Math.random().toString(36).substr(2, 9);
+          setUploadedFiles(prev => [...prev, {
+            id: fileId,
+            file,
+            documentType: 'financial_report',
+            description: '',
+            asOfDate: new Date().toISOString().split('T')[0]
+          }]);
+        }
+      });
+    }
+  };
+
+  const handleFileMetadataChange = (fileId: string, field: string, value: string) => {
+    setUploadedFiles(prev => prev.map(file => 
+      file.id === fileId ? { ...file, [field]: value } : file
+    ));
+  };
+
+  const handleRemoveFile = (fileId: string) => {
+    setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -140,7 +175,30 @@ export default function CompanyForm() {
         created_by: 'user-id' // This should come from auth context
       };
       
-      await portfolioService.createCompany(companyData);
+      // Create the company first
+      const company = await portfolioService.createCompany(companyData);
+      
+      // Upload files if any
+      if (uploadedFiles.length > 0 && company?.id) {
+        for (const fileData of uploadedFiles) {
+          try {
+            await portfolioService.uploadDocument({
+              portfolio_company_id: company.id,
+              file: fileData.file,
+              document_type: fileData.documentType as 'financial_report' | 'valuation_model' | 'budget_forecast' | 'board_materials' | 'audit_report' | 'other',
+              as_of_date: fileData.asOfDate,
+              description: fileData.description,
+              confidentiality_level: 'internal',
+              prepared_by: 'user-id', // This should come from auth context
+              tags: [fileData.documentType]
+            });
+          } catch (fileError) {
+            console.error('Error uploading file:', fileError);
+            // Continue with other files even if one fails
+          }
+        }
+      }
+      
       router.push('/dashboard');
     } catch (error) {
       console.error('Error creating company:', error);
@@ -463,6 +521,111 @@ export default function CompanyForm() {
                       onChange={(e) => handleInputChange('esg_score', parseInt(e.target.value) || 0)}
                     />
                   </div>
+                </div>
+
+                {/* Document Upload Section */}
+                <div className="mt-8 p-6 border rounded-lg bg-gray-50">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileSpreadsheet className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-lg font-semibold">Financial Documents</h3>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Upload Excel files with financial data, reports, and supporting documents
+                  </p>
+                  
+                  {/* File Upload Area */}
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      id="file-upload"
+                      multiple
+                      accept=".xlsx,.xls,.csv"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600">
+                        Click to upload Excel files or drag and drop
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Supports .xlsx, .xls, .csv files
+                      </p>
+                    </label>
+                  </div>
+
+                  {/* Uploaded Files List */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="mt-6 space-y-4">
+                      <h4 className="font-medium text-gray-900">Uploaded Files</h4>
+                      {uploadedFiles.map((fileData) => (
+                        <div key={fileData.id} className="bg-white p-4 border rounded-lg">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <FileSpreadsheet className="w-4 h-4 text-green-600" />
+                              <span className="font-medium text-sm">{fileData.file.name}</span>
+                              <span className="text-xs text-gray-500">
+                                ({(fileData.file.size / 1024 / 1024).toFixed(2)} MB)
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveFile(fileData.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <Label htmlFor={`doc-type-${fileData.id}`} className="text-xs">Document Type</Label>
+                              <Select
+                                value={fileData.documentType}
+                                onValueChange={(value) => handleFileMetadataChange(fileData.id, 'documentType', value)}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="financial_report">Financial Report</SelectItem>
+                                  <SelectItem value="valuation_model">Valuation Model</SelectItem>
+                                  <SelectItem value="budget_forecast">Budget & Forecast</SelectItem>
+                                  <SelectItem value="board_materials">Board Materials</SelectItem>
+                                  <SelectItem value="audit_report">Audit Report</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div>
+                              <Label htmlFor={`as-of-date-${fileData.id}`} className="text-xs">As of Date</Label>
+                              <Input
+                                id={`as-of-date-${fileData.id}`}
+                                type="date"
+                                value={fileData.asOfDate}
+                                onChange={(e) => handleFileMetadataChange(fileData.id, 'asOfDate', e.target.value)}
+                                className="h-8"
+                              />
+                            </div>
+                            
+                            <div>
+                              <Label htmlFor={`description-${fileData.id}`} className="text-xs">Description</Label>
+                              <Input
+                                id={`description-${fileData.id}`}
+                                value={fileData.description}
+                                onChange={(e) => handleFileMetadataChange(fileData.id, 'description', e.target.value)}
+                                placeholder="Brief description..."
+                                className="h-8"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
