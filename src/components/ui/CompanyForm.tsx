@@ -182,13 +182,13 @@ export default function CompanyForm() {
                   }`}>
                     {isCompleted ? '✓' : <Icon className="w-5 h-5" />}
                   </div>
-                  <span className={`ml-2 text-sm font-medium ${
+                  <span className={`ml-3 text-sm font-medium ${
                     isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-500'
                   }`}>
                     {step.title}
                   </span>
                   {index < steps.length - 1 && (
-                    <div className={`w-8 h-0.5 mx-4 ${
+                    <div className={`w-12 h-0.5 mx-6 ${
                       isCompleted ? 'bg-green-600' : 'bg-gray-300'
                     }`} />
                   )}
