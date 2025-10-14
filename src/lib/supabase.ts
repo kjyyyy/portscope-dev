@@ -1,9 +1,23 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Lazy initialization to avoid build-time errors
+let supabaseClient: any = null
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = () => {
+  if (!supabaseClient) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing Supabase environment variables')
+    }
+    
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
+  }
+  
+  return supabaseClient
+}
 
 // Database Types
 export interface PortfolioCompany {
@@ -148,7 +162,7 @@ export interface PerformanceUpdate {
 export const portfolioService = {
   // Get all portfolio companies for a user
   async getCompanies(userId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('portfolio_companies')
       .select('*')
       .eq('created_by', userId)
@@ -160,9 +174,9 @@ export const portfolioService = {
 
   // Create a new portfolio company
   async createCompany(company: Omit<PortfolioCompany, 'id' | 'created_at' | 'updated_at'>) {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('portfolio_companies')
-      .insert(company)
+      .insert(company as any)
       .select()
       .single()
     
@@ -172,9 +186,9 @@ export const portfolioService = {
 
   // Update a portfolio company
   async updateCompany(id: string, updates: Partial<PortfolioCompany>) {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('portfolio_companies')
-      .update(updates)
+      .update(updates as any)
       .eq('id', id)
       .select()
       .single()
@@ -185,7 +199,7 @@ export const portfolioService = {
 
   // Get documents for a company
   async getCompanyDocuments(companyId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('documents')
       .select('*')
       .eq('portfolio_company_id', companyId)
@@ -203,14 +217,14 @@ export const portfolioService = {
     const filePath = `documents/${metadata.portfolio_company_id}/${fileName}`
     
     // Upload file to Supabase Storage
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase().storage
       .from('documents')
       .upload(filePath, file)
     
     if (uploadError) throw uploadError
     
     // Get public URL
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = supabase().storage
       .from('documents')
       .getPublicUrl(filePath)
     
@@ -224,9 +238,9 @@ export const portfolioService = {
       file_path: filePath
     }
     
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('documents')
-      .insert(documentData)
+      .insert(documentData as any)
       .select()
       .single()
     
