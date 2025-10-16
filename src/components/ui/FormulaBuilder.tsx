@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calculator, Plus, Save, Code, FileSpreadsheet, Upload, Download, Grid3X3 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Calculator, Plus, Save, Code, FileSpreadsheet, Upload, Download, Grid3X3, AlertCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { portfolioService } from "@/lib/supabase";
 
 const formulaTemplates = [
   { name: "IRR", formula: "=IRR(cashflows, [guess])", description: "Internal Rate of Return" },
@@ -24,6 +25,10 @@ export default function FormulaBuilder() {
   const [activeTab, setActiveTab] = useState("formula");
   const [excelData, setExcelData] = useState<Array<Array<string>>>([]);
   const [selectedCell, setSelectedCell] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string>("");
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{name: string, url: string, size: number}>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const demoMode = document.cookie.includes('demoMode=true');
@@ -78,6 +83,89 @@ export default function FormulaBuilder() {
 
   const insertCellReference = (cellRef: string) => {
     setSelectedFormula(prev => prev + cellRef);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    setUploadError("");
+
+    try {
+      for (const file of Array.from(files)) {
+        // Validate file type
+        const allowedTypes = [
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'text/csv',
+          'application/csv'
+        ];
+        
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['xls', 'xlsx', 'csv'];
+        
+        if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension || '')) {
+          throw new Error(`Unsupported file type: ${file.name}. Please upload .xls, .xlsx, or .csv files.`);
+        }
+
+        // Create a mock company ID for formula builder uploads
+        const mockCompanyId = 'formula-builder-' + Date.now();
+        
+        // Upload to Supabase
+        const documentData = {
+          portfolio_company_id: mockCompanyId,
+          file: file,
+          document_type: 'financial_model' as const,
+          as_of_date: new Date().toISOString().split('T')[0],
+          description: `Formula Builder Upload: ${file.name}`,
+          confidentiality_level: 'internal' as const,
+          prepared_by: 'formula-builder-user',
+          tags: ['formula-builder', 'excel-import']
+        };
+
+        const uploadedDocument = await portfolioService.uploadDocument(file, documentData);
+        
+        setUploadedFiles(prev => [...prev, {
+          name: file.name,
+          url: uploadedDocument.file_url,
+          size: file.size
+        }]);
+
+        // Parse CSV/Excel data if possible
+        if (file.type === 'text/csv' || fileExtension === 'csv') {
+          const text = await file.text();
+          const rows = text.split('\n').map(row => row.split(',').map(cell => cell.trim().replace(/"/g, '')));
+          setExcelData(rows.slice(0, 10).map(row => [...row, ...Array(6 - row.length).fill('')]));
+        }
+      }
+      
+      if (isDemoMode) {
+        alert(`Demo Mode: ${files.length} file(s) uploaded successfully to Supabase!`);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadError(error instanceof Error ? error.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleExportClick = () => {
+    if (isDemoMode) {
+      alert('Demo Mode: Export functionality would download the current spreadsheet data as Excel file.');
+      return;
+    }
+    
+    // TODO: Implement actual Excel export
+    console.log('Exporting Excel data:', excelData);
   };
 
   return (
@@ -147,11 +235,20 @@ export default function FormulaBuilder() {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Excel-like Interface</h3>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleImportClick}
+                  disabled={isUploading}
+                >
                   <Upload className="h-4 w-4 mr-1" />
-                  Import Excel
+                  {isUploading ? 'Uploading...' : 'Import Excel'}
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleExportClick}
+                >
                   <Download className="h-4 w-4 mr-1" />
                   Export
                 </Button>
@@ -212,6 +309,49 @@ export default function FormulaBuilder() {
                 </Button>
               ))}
             </div>
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xls,.xlsx,.csv"
+              multiple
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+
+            {/* Upload status and error display */}
+            {uploadError && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm">{uploadError}</span>
+              </div>
+            )}
+
+            {uploadedFiles.length > 0 && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <h4 className="text-sm font-medium text-green-800 mb-2">Uploaded Files:</h4>
+                <div className="space-y-1">
+                  {uploadedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                        <span className="text-green-700">{file.name}</span>
+                        <span className="text-green-600">({(file.size / 1024).toFixed(1)} KB)</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.open(file.url, '_blank')}
+                        className="text-green-600 hover:text-green-700"
+                      >
+                        View
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="templates" className="space-y-4 mt-4">
