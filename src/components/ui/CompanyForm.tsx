@@ -217,10 +217,18 @@ export default function CompanyForm() {
       if (uploadedFiles.length > 0 && company?.id) {
         for (const fileData of uploadedFiles) {
           try {
-            await portfolioService.uploadDocument({
+            await portfolioService.uploadDocument(fileData.file, {
               portfolio_company_id: company.id,
-              file: fileData.file,
-              document_type: fileData.documentType as 'financial_report' | 'valuation_model' | 'budget_forecast' | 'board_materials' | 'audit_report' | 'other',
+              document_type: (() => {
+                switch (fileData.documentType) {
+                  case 'financial_report': return 'financials';
+                  case 'valuation_model': return 'valuation_report';
+                  case 'budget_forecast': return 'financials';
+                  case 'board_materials': return 'board_materials';
+                  case 'audit_report': return 'financials';
+                  default: return 'other';
+                }
+              })(),
               as_of_date: fileData.asOfDate,
               description: fileData.description,
               confidentiality_level: 'internal',
@@ -238,10 +246,17 @@ export default function CompanyForm() {
       if (contactDocuments.length > 0 && company?.id) {
         for (const fileData of contactDocuments) {
           try {
-            await portfolioService.uploadDocument({
+            await portfolioService.uploadDocument(fileData.file, {
               portfolio_company_id: company.id,
-              file: fileData.file,
-              document_type: fileData.documentType as 'contact_list' | 'org_chart' | 'meeting_notes' | 'board_pack' | 'other',
+              document_type: (() => {
+                switch (fileData.documentType) {
+                  case 'contact_list': return 'other';
+                  case 'org_chart': return 'other';
+                  case 'meeting_notes': return 'other';
+                  case 'board_pack': return 'board_materials';
+                  default: return 'other';
+                }
+              })(),
               as_of_date: fileData.asOfDate,
               description: fileData.description,
               confidentiality_level: 'internal',

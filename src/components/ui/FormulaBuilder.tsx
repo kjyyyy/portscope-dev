@@ -24,7 +24,6 @@ export default function FormulaBuilder() {
   const [savedFormulas, setSavedFormulas] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("formula");
   const [excelData, setExcelData] = useState<Array<Array<string>>>([]);
-  const [selectedCell, setSelectedCell] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
   const [uploadedFiles, setUploadedFiles] = useState<Array<{name: string, url: string, size: number}>>([]);
@@ -38,7 +37,7 @@ export default function FormulaBuilder() {
     if (excelData.length === 0) {
       setExcelData(Array(10).fill(null).map(() => Array(6).fill("")));
     }
-  }, []);
+  }, [excelData.length]);
 
   const handleNewFormula = () => {
     setFormulaName("");
@@ -115,8 +114,7 @@ export default function FormulaBuilder() {
         // Upload to Supabase
         const documentData = {
           portfolio_company_id: mockCompanyId,
-          file: file,
-          document_type: 'financial_model' as const,
+          document_type: 'financials' as const,
           as_of_date: new Date().toISOString().split('T')[0],
           description: `Formula Builder Upload: ${file.name}`,
           confidentiality_level: 'internal' as const,
