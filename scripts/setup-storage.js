@@ -7,14 +7,15 @@ async function setupStorage() {
   console.log('🔧 Setting up Supabase Storage Buckets...\n');
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!supabaseUrl || !supabaseServiceKey) {
     console.error('❌ Missing Supabase environment variables!');
+    console.error('Required: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
     process.exit(1);
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
     // List existing buckets
@@ -31,12 +32,9 @@ async function setupStorage() {
       console.log(`  📁 ${bucket.name} (${bucket.public ? 'public' : 'private'})`);
     });
 
-    // Create required buckets
+    // Create required buckets (only the one actually used by the code)
     const requiredBuckets = [
-      { name: 'documents', public: true },
-      { name: 'company-docs', public: false },
-      { name: 'financial-reports', public: false },
-      { name: 'legal-documents', public: false }
+      { name: 'documents', public: true }
     ];
 
     console.log('\n🔧 Creating required buckets...');
