@@ -1,20 +1,20 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSignIn } from '@/hooks/features/useSignIn';
-import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 
 // Disable static generation for this page (uses searchParams)
 export const dynamic = 'force-dynamic';
 
 function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,18 +42,21 @@ function LoginForm() {
       { email, password },
       {
         onSuccess: async () => {
-          // Wait for session to be available, then redirect
-          // Use a small delay to ensure cookies are set
-          await new Promise(resolve => setTimeout(resolve, 300));
+          // Use Next.js client-side navigation (no page reload)
+          // This preserves React state and provides smooth UX
+          // 
+          // Flow:
+          // 1. Supabase sets session cookie synchronously during signInWithPassword
+          // 2. AuthProvider's onAuthStateChange fires immediately
+          // 3. Small delay ensures cookie is available to middleware
+          // 4. Navigate to dashboard - middleware will verify session
+          // 5. Dashboard's client-side auth check provides fallback if needed
           
-          // Verify session exists before redirecting
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            // Force a full page reload to ensure cookies are set
-            window.location.href = '/dashboard';
-          } else {
-            setError('Session not available. Please try again.');
-          }
+          // Small delay to ensure cookie is set and AuthProvider updates
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Navigate using Next.js router (client-side, no reload)
+          router.push('/dashboard');
         },
         onError: (err: Error) => {
           setError(err.message);

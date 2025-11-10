@@ -47,8 +47,16 @@ export default function DashboardPage() {
   const { data: companies = [], isLoading, error } = usePortfolioCompanies();
 
   // Redirect to login if not authenticated
+  // Only redirect after auth check is complete and user is confirmed missing
   useEffect(() => {
-    if (!authLoading && !user) {
+    // Don't redirect if still loading - wait for auth state to settle
+    if (authLoading) {
+      return;
+    }
+    
+    // Only redirect if we're certain there's no user
+    // This prevents race conditions during sign-in
+    if (!user) {
       router.push('/login');
     }
   }, [user, authLoading, router]);

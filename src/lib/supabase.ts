@@ -1,11 +1,11 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Create client with fallback values for build time
-// Actual values will be replaced by Vercel at build time
-export const supabase = createClient(
+// Create browser client with proper cookie handling for Next.js
+// This ensures cookies are properly set and accessible to middleware
+export const supabase = createBrowserClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key'
 )
