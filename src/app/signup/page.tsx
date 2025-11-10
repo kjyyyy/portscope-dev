@@ -54,7 +54,10 @@ export default function SignUpPage() {
       },
       {
         onSuccess: () => {
-          router.push('/dashboard');
+          // Don't redirect immediately - user needs to confirm email
+          setError('');
+          // Show success message (you can add a success state if needed)
+          router.push('/login?message=Please check your email to confirm your account');
         },
         onError: (err: Error) => {
           setError(err.message);

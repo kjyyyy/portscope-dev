@@ -31,17 +31,26 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_anon_key_here
 # Keep these as they are:
 NEXT_PUBLIC_APP_NAME=PortScope Dev
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-APP_PASSWORD=portscope2024
 ```
 
-## Step 4: Set Up Database Schema
+## Step 4: Configure Authentication URLs
+
+1. **In your Supabase dashboard, go to Authentication → URL Configuration**
+2. **Set Site URL** to your production domain (e.g., `https://your-app.vercel.app`)
+   - For local development, you can keep `http://localhost:3000` temporarily
+3. **Add Redirect URLs**:
+   - `http://localhost:3000/auth/callback` (for local development)
+   - `https://your-app.vercel.app/auth/callback` (for production)
+4. **Click "Save changes"**
+
+## Step 5: Set Up Database Schema
 
 1. **In your Supabase dashboard, go to SQL Editor**
 2. **Copy the entire contents of `supabase/schema.sql`**
 3. **Paste it into the SQL Editor**
 4. **Click "Run" to execute the schema**
 
-## Step 5: Set Up File Storage
+## Step 6: Set Up File Storage
 
 1. **In your Supabase dashboard, go to Storage**
 2. **Click "Create a new bucket"**
@@ -80,7 +89,7 @@ APP_PASSWORD=portscope2024
 - **File size limit:** 100MB
 - **Same MIME types as above**
 
-## Step 6: Test the Connection
+## Step 7: Test the Connection
 
 Run this command to test your setup:
 
@@ -94,7 +103,7 @@ You should see:
 - ✅ Storage connection successful
 - ✅ All required buckets created
 
-## Step 7: Start Your App
+## Step 8: Start Your App
 
 ```bash
 npm run dev
