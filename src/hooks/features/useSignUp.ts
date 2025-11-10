@@ -5,11 +5,31 @@ import type { SignUpData } from '@/types/user'
 export function useSignUp() {
   return useMutation({
     mutationFn: async (data: SignUpData) => {
+      // Check if Supabase is configured
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('placeholder')) {
+        throw new Error('Supabase is not configured. Please check your environment variables.')
+      }
+
       // Sign up user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-      })
+      let authData, authError
+      try {
+        const result = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+        })
+        authData = result.data
+        authError = result.error
+      } catch (error) {
+        // Handle network errors
+        const err = error as Error
+        if (err.message.includes('Failed to fetch') || err.message.includes('ERR_NAME_NOT_RESOLVED')) {
+          throw new Error('Unable to connect to authentication service. Please check your internet connection and try again.')
+        }
+        throw new Error(err.message || 'Failed to create account. Please try again.')
+      }
 
       if (authError) {
         throw new Error(authError.message)

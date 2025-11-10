@@ -3,20 +3,28 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Home, BarChart3, Calculator, LogOut, Building2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/auth/AuthProvider';
+import { supabase } from '@/lib/supabase';
 
 export default function Navigation() {
   const router = useRouter();
   const pathname = usePathname();
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  
+  // Safely get auth context (may not be available during SSR)
+  let user = null;
+  let loading = true;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+    loading = auth.loading;
+  } catch {
+    // Auth context not available, hide navigation
+    return null;
+  }
 
-  useEffect(() => {
-    const demoMode = document.cookie.includes('demoMode=true');
-    const authenticated = document.cookie.includes('authenticated=true');
-    setIsDemoMode(demoMode || authenticated);
-  }, []);
-
-  if (!isDemoMode || pathname === '/') {
+  // Hide navigation on public pages (home, login, signup) or if not authenticated
+  const publicPages = ['/', '/login', '/signup'];
+  if (loading || !user || publicPages.includes(pathname)) {
     return null;
   }
 
@@ -27,10 +35,15 @@ export default function Navigation() {
     { name: 'Valuations', path: '/dashboard/valuations', icon: Calculator },
   ];
 
-  const handleLogout = () => {
-    document.cookie = 'demoMode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    document.cookie = 'authenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      router.push('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      // Still redirect even if signout fails
+      router.push('/');
+    }
   };
 
   return (
@@ -64,7 +77,7 @@ export default function Navigation() {
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4 mr-1" />
-            Exit Demo
+            Sign Out
           </Button>
         </div>
       </div>

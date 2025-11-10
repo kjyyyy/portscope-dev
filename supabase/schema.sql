@@ -563,9 +563,7 @@ CREATE TABLE financial_statements (
   
   -- Additional Info
   notes TEXT,
-  prepared_by UUID REFERENCES auth.users(id),
-  
-  UNIQUE(portfolio_company_id, statement_type, period_type, year, COALESCE(quarter, ''), COALESCE(month::text, ''))
+  prepared_by UUID REFERENCES auth.users(id)
 );
 
 -- ============================================================================
@@ -811,6 +809,15 @@ CREATE INDEX idx_key_hires_company_id ON key_hires(portfolio_company_id);
 CREATE INDEX idx_financial_statements_company_id ON financial_statements(portfolio_company_id);
 CREATE INDEX idx_financial_statements_period ON financial_statements(portfolio_company_id, year, quarter, month);
 CREATE INDEX idx_financial_statements_company_date ON financial_statements(portfolio_company_id, period_end_date DESC);
+-- Unique constraint: one statement per company per period type
+CREATE UNIQUE INDEX idx_financial_statements_unique_period ON financial_statements(
+  portfolio_company_id, 
+  statement_type, 
+  period_type, 
+  year, 
+  COALESCE(quarter, ''), 
+  COALESCE(month::text, '')
+);
 
 -- News Items
 CREATE INDEX idx_news_items_company_id ON news_items(portfolio_company_id);
