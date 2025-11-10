@@ -83,7 +83,7 @@ CREATE TABLE portfolio_companies (
   subsector VARCHAR(100),
   investment_theme VARCHAR(255),
   stage VARCHAR(50), -- 'seed', 'series_a', 'series_b', 'growth', 'late_stage'
-  ownership_percentage DECIMAL(5,2),
+  ownership_percentage DECIMAL(5,2) CHECK (ownership_percentage >= 0 AND ownership_percentage <= 100),
   investment_type VARCHAR(50), -- 'equity', 'debt', 'convertible', 'preferred'
   
   -- Investment Timeline
@@ -164,7 +164,7 @@ CREATE TABLE deal_summaries (
   deal_terms JSONB, -- Store structured deal terms
   closing_date DATE,
   deal_size DECIMAL(15,2),
-  ownership_percentage DECIMAL(5,2),
+  ownership_percentage DECIMAL(5,2) CHECK (ownership_percentage >= 0 AND ownership_percentage <= 100),
   
   -- Additional Context
   key_highlights TEXT[],
@@ -254,7 +254,7 @@ CREATE TABLE cap_table_entries (
   stakeholder_type VARCHAR(50) NOT NULL, -- 'investor', 'founder', 'employee', 'option_pool', 'advisor'
   
   -- Ownership Details
-  ownership_percentage DECIMAL(5,2),
+  ownership_percentage DECIMAL(5,2) CHECK (ownership_percentage >= 0 AND ownership_percentage <= 100),
   shares_owned BIGINT,
   fully_diluted_percentage DECIMAL(5,2),
   preferred_shares BIGINT,

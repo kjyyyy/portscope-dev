@@ -33,8 +33,9 @@ async function setupStorage() {
     });
 
     // Create required buckets (only the one actually used by the code)
+    // Using private bucket for security (documents should be protected)
     const requiredBuckets = [
-      { name: 'documents', public: true }
+      { name: 'documents', public: false, fileSizeLimit: 100 * 1024 * 1024 } // 100MB
     ];
 
     console.log('\n🔧 Creating required buckets...');
@@ -48,19 +49,43 @@ async function setupStorage() {
       }
 
       try {
-        const { data, error } = await supabase.storage
-          .createBucket(bucketConfig.name, {
-            public: bucketConfig.public,
-            fileSizeLimit: 50 * 1024 * 1024 // 50MB
-          });
+        // Try creating via SQL (more reliable)
+        const sql = `
+          INSERT INTO storage.buckets (id, name, public, file_size_limit)
+          VALUES (
+            '${bucketConfig.name}',
+            '${bucketConfig.name}',
+            ${bucketConfig.public},
+            ${bucketConfig.fileSizeLimit || 50 * 1024 * 1024}
+          )
+          ON CONFLICT (id) DO NOTHING;
+        `;
+        
+        const { error: sqlError } = await supabase.rpc('exec_sql', { sql });
+        
+        if (sqlError) {
+          // Fallback to storage API
+          const { data, error } = await supabase.storage
+            .createBucket(bucketConfig.name, {
+              public: bucketConfig.public
+            });
 
-        if (error) {
-          console.log(`⚠️  ${bucketConfig.name}: ${error.message}`);
+          if (error) {
+            console.log(`⚠️  ${bucketConfig.name}: ${error.message}`);
+            console.log(`\n📋 Please create the bucket manually using this SQL in Supabase SQL Editor:\n`);
+            console.log(`INSERT INTO storage.buckets (id, name, public, file_size_limit)`);
+            console.log(`VALUES ('${bucketConfig.name}', '${bucketConfig.name}', ${bucketConfig.public}, ${bucketConfig.fileSizeLimit || 50 * 1024 * 1024});\n`);
+          } else {
+            console.log(`✅ Created ${bucketConfig.name} bucket`);
+          }
         } else {
-          console.log(`✅ Created ${bucketConfig.name} bucket`);
+          console.log(`✅ Created ${bucketConfig.name} bucket (via SQL)`);
         }
       } catch (err) {
         console.log(`⚠️  ${bucketConfig.name}: ${err.message}`);
+        console.log(`\n📋 Please create the bucket manually using this SQL in Supabase SQL Editor:\n`);
+        console.log(`INSERT INTO storage.buckets (id, name, public, file_size_limit)`);
+        console.log(`VALUES ('${bucketConfig.name}', '${bucketConfig.name}', ${bucketConfig.public}, ${bucketConfig.fileSizeLimit || 50 * 1024 * 1024});\n`);
       }
     }
 

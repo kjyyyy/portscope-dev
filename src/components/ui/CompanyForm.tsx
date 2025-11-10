@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus, Building2, DollarSign, Users, TrendingUp, Upload, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { portfolioService, type Contact } from '@/lib/supabase';
+import { useAuth } from '@/auth/AuthProvider';
 
 interface CompanyFormData {
   // Basic Information
@@ -61,11 +62,13 @@ interface CompanyFormData {
 
 export default function CompanyForm() {
   const router = useRouter();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [newContact, setNewContact] = useState<Partial<Contact>>({});
   const [showContactForm, setShowContactForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<Array<{
     id: string;
     file: File;
@@ -116,6 +119,13 @@ export default function CompanyForm() {
   });
 
   const handleInputChange = (field: keyof CompanyFormData, value: string | number) => {
+    // Validate ownership percentage (0-100)
+    if (field === 'ownership_percentage') {
+      const numValue = typeof value === 'number' ? value : parseFloat(value as string) || 0;
+      if (numValue < 0) value = 0;
+      if (numValue > 100) value = 100;
+    }
+    
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -199,6 +209,26 @@ export default function CompanyForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    
+    // Validate user is authenticated
+    if (!user?.id) {
+      setError('You must be signed in to create a company. Please sign in and try again.');
+      return;
+    }
+    
+    // Validate required fields
+    if (!formData.company_name.trim()) {
+      setError('Company name is required.');
+      return;
+    }
+    
+    // Validate ownership percentage
+    if (formData.ownership_percentage < 0 || formData.ownership_percentage > 100) {
+      setError('Ownership percentage must be between 0 and 100.');
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
@@ -207,7 +237,7 @@ export default function CompanyForm() {
         stage: formData.stage as 'seed' | 'series_a' | 'series_b' | 'growth' | 'late_stage' | undefined,
         investment_type: formData.investment_type as 'equity' | 'debt' | 'convertible' | 'preferred' | undefined,
         key_contacts: contacts,
-        created_by: 'user-id' // This should come from auth context
+        created_by: user.id // Use actual authenticated user ID
       };
       
       // Create the company first
@@ -215,7 +245,8 @@ export default function CompanyForm() {
       
       // Upload financial files if any
       if (uploadedFiles.length > 0 && company?.id) {
-        for (const fileData of uploadedFiles) {
+        for (let i = 0; i < uploadedFiles.length; i++) {
+          const fileData = uploadedFiles[i];
           try {
             await portfolioService.uploadDocument(fileData.file, {
               portfolio_company_id: company.id,
@@ -232,11 +263,13 @@ export default function CompanyForm() {
               as_of_date: fileData.asOfDate,
               description: fileData.description,
               confidentiality_level: 'internal',
-              prepared_by: 'user-id', // This should come from auth context
+              prepared_by: user.id, // Use actual authenticated user ID
               tags: [fileData.documentType]
             });
           } catch (fileError) {
             console.error('Error uploading financial file:', fileError);
+            const errorMessage = fileError instanceof Error ? fileError.message : 'Unknown error';
+            setError(`Failed to upload ${fileData.file.name}: ${errorMessage}. Continuing with other files...`);
             // Continue with other files even if one fails
           }
         }
@@ -244,7 +277,8 @@ export default function CompanyForm() {
 
       // Upload contact documents if any
       if (contactDocuments.length > 0 && company?.id) {
-        for (const fileData of contactDocuments) {
+        for (let i = 0; i < contactDocuments.length; i++) {
+          const fileData = contactDocuments[i];
           try {
             await portfolioService.uploadDocument(fileData.file, {
               portfolio_company_id: company.id,
@@ -260,20 +294,34 @@ export default function CompanyForm() {
               as_of_date: fileData.asOfDate,
               description: fileData.description,
               confidentiality_level: 'internal',
-              prepared_by: 'user-id', // This should come from auth context
+              prepared_by: user.id, // Use actual authenticated user ID
               tags: [fileData.documentType]
             });
           } catch (fileError) {
             console.error('Error uploading contact document:', fileError);
+            const errorMessage = fileError instanceof Error ? fileError.message : 'Unknown error';
+            setError(`Failed to upload ${fileData.file.name}: ${errorMessage}. Continuing with other files...`);
             // Continue with other files even if one fails
           }
         }
       }
       
+      // Success - redirect to dashboard
       router.push('/dashboard');
     } catch (error) {
       console.error('Error creating company:', error);
-      alert('Error creating company. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      // Provide specific error messages
+      if (errorMessage.includes('permission') || errorMessage.includes('RLS')) {
+        setError('Permission denied. Please ensure you are signed in and have the necessary permissions.');
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        setError('Network error. Please check your internet connection and try again.');
+      } else if (errorMessage.includes('storage') || errorMessage.includes('bucket')) {
+        setError('Storage error. The documents bucket may not be set up. Please contact support.');
+      } else {
+        setError(`Error creating company: ${errorMessage}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -327,6 +375,11 @@ export default function CompanyForm() {
           </div>
 
       <form onSubmit={handleSubmit}>
+            {error && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
             <Tabs value={currentStep.toString()} className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="1">Basic Info</TabsTrigger>
@@ -443,14 +496,22 @@ export default function CompanyForm() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="ownership_percentage">Ownership %</Label>
+                    <Label htmlFor="ownership_percentage">Ownership % (0-100)</Label>
                     <Input
                       id="ownership_percentage"
                       type="number"
                       step="0.01"
+                      min="0"
+                      max="100"
                       value={formData.ownership_percentage}
                       onChange={(e) => handleInputChange('ownership_percentage', parseFloat(e.target.value) || 0)}
                     />
+                    {formData.ownership_percentage > 100 && (
+                      <p className="text-xs text-red-600 mt-1">Ownership cannot exceed 100%</p>
+                    )}
+                    {formData.ownership_percentage < 0 && (
+                      <p className="text-xs text-red-600 mt-1">Ownership cannot be negative</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="initial_investment_date">Initial Investment Date</Label>

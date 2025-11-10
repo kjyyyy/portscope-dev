@@ -30,7 +30,11 @@ function LoginForm() {
       setMessage(msg);
     }
     if (err) {
-      setError(err === 'invalid_token' ? 'Invalid or expired verification link' : err);
+      if (err === 'invalid_token' || err === 'expired_link') {
+        setError('Your email verification link has expired. Please sign in to request a new confirmation email, or try signing up again.');
+      } else {
+        setError(err);
+      }
     }
   }, [searchParams]);
 
