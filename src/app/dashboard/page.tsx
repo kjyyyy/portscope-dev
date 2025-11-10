@@ -1,202 +1,372 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import MetricCard from '@/components/ui/MetricCard';
-import ChartCard from '@/components/ui/ChartCard';
-import RecentActivity from '@/components/ui/RecentActivity';
-import AIAssistant from '@/components/ui/AIAssistant';
-import FormulaBuilder from '@/components/ui/FormulaBuilder';
-import VersionControl from '@/components/ui/VersionControl';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { usePortfolioCompanies } from '@/hooks/features/usePortfolioCompanies';
+import { 
+  Building2, 
+  DollarSign, 
+  TrendingUp, 
+  Plus, 
+  FileText, 
+  Bell, 
+  Link as LinkIcon,
+  Upload,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  ExternalLink
+} from 'lucide-react';
 import FileDropZone from '@/components/ui/FileDropZone';
-import { cn } from '@/lib/utils';
-import { Building2, DollarSign, TrendingUp, Users, BarChart3, Calculator, ArrowRight } from 'lucide-react';
 
-const companies = ['Acme Capital', 'Blue Ocean Ventures', 'FinTech Growth'];
-
-function OnboardButton({ className }: { className?: string }) {
-  const router = useRouter();
-
-  return (
-    <div className={cn('flex justify-end', className)}>
-      <Button
-        onClick={() => router.push('/dashboard/portfolio/new')}
-        className="bg-primary text-white hover:bg-primary/90"
-      >
-        + Onboard Portfolio Company
-      </Button>
-    </div>
-  );
+function formatCurrency(amount: number | undefined): string {
+  if (!amount) return '$0';
+  if (amount >= 1000000000) {
+    return `$${(amount / 1000000000).toFixed(2)}B`;
+  } else if (amount >= 1000000) {
+    return `$${(amount / 1000000).toFixed(2)}M`;
+  } else if (amount >= 1000) {
+    return `$${(amount / 1000).toFixed(2)}K`;
+  }
+  return `$${amount.toFixed(2)}`;
 }
 
-export default function OverviewPage() {
-  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
-  const [isDemoMode, setIsDemoMode] = useState(false);
+function formatPercentage(value: number | undefined): string {
+  if (!value) return '0%';
+  return `${value.toFixed(1)}%`;
+}
+
+export default function DashboardPage() {
   const router = useRouter();
+  const { data: companies = [], isLoading, error } = usePortfolioCompanies();
 
-  useEffect(() => {
-    const demoMode = document.cookie.includes('demoMode=true');
-    setIsDemoMode(demoMode);
-  }, []);
+  // Calculate aggregate metrics
+  const totalPortfolioValue = companies.reduce((sum, c) => sum + (c.current_fair_value || 0), 0);
+  const totalInvested = companies.reduce((sum, c) => sum + (c.total_invested || 0), 0);
+  const activeCompanies = companies.filter(c => c.status === 'active').length;
+  const avgIRR = companies.length > 0
+    ? companies.reduce((sum, c) => sum + (c.irr || 0), 0) / companies.length
+    : 0;
 
-  const handleFileUpload = (files: File[]) => {
-    // Demo mode file upload simulation
-    if (isDemoMode) {
-      alert(`Demo Mode: ${files.length} file(s) would be uploaded to S3 in production`);
-    } else {
-      // TODO: Upload to S3 logic here
-      console.log('Uploading files:', files);
-    }
+  const handleFileUpload = async (files: File[]) => {
+    // TODO: Implement file upload logic
+    console.log('Uploading files:', files);
+    // This will be implemented with proper document upload service
   };
 
-  const handleCompanySelect = (value: string) => {
-    setSelectedCompany(value);
-    if (isDemoMode) {
-      // Simulate loading in demo mode
-      setTimeout(() => {
-        console.log(`Demo Mode: Selected company ${value}`);
-      }, 500);
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleNavigateToAnalytics = () => {
-    router.push('/dashboard/analytics');
-  };
-
-  const handleNavigateToValuations = () => {
-    router.push('/dashboard/valuations');
-  };
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center text-red-600">
+          <p>Error loading dashboard data</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Portfolio Dashboard</h1>
-        <p className="text-muted-foreground">
-          Monitor your private equity investments and performance
-        </p>
-        {isDemoMode && (
-          <p className="text-sm text-blue-600 mt-2">
-            🎯 Demo Mode: All features are interactive for demonstration
+      {/* Header */}
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold">Portfolio Dashboard</h1>
+          <p className="text-muted-foreground">
+            Overview of your private equity investments and performance
           </p>
-        )}
+        </div>
+        <Button
+          onClick={() => router.push('/dashboard/portfolio/new')}
+          className="bg-primary text-white hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Onboard Company
+        </Button>
       </div>
 
-      <div className="max-w-sm">
-        <Select onValueChange={handleCompanySelect}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a portfolio company" />
-          </SelectTrigger>
-          <SelectContent>
-            {companies.map((company) => (
-              <SelectItem key={company} value={company}>{company}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <OnboardButton className="mt-2" />
-
-      {/* Enhanced Stats Cards */}
+      {/* Portfolio Overview Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          title="Total Portfolio Value"
-          value="$1.2B"
-          change="+12.5%"
-          trend="up"
-          icon={<DollarSign className="h-4 w-4" />}
-        />
-        <MetricCard
-          title="Portfolio Companies"
-          value="24"
-          change="+2"
-          trend="up"
-          icon={<Building2 className="h-4 w-4" />}
-        />
-        <MetricCard
-          title="Average IRR"
-          value="18.4%"
-          change="+2.1%"
-          trend="up"
-          icon={<TrendingUp className="h-4 w-4" />}
-        />
-        <MetricCard
-          title="Active Deals"
-          value="7"
-          change="-1"
-          trend="down"
-          icon={<Users className="h-4 w-4" />}
-        />
-      </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Portfolio Value</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totalPortfolioValue)}</div>
+            <p className="text-xs text-muted-foreground">
+              {formatCurrency(totalInvested)} invested
+            </p>
+          </CardContent>
+        </Card>
 
-      {/* Advanced Features Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <ChartCard 
-          title="Portfolio Valuation Trend" 
-          type="bar"
-          formatter={(value) => [`$${value}M`, 'Portfolio Value']}
-        />
-        <AIAssistant />
-        <RecentActivity />
-      </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Portfolio Companies</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{companies.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {activeCompanies} active
+            </p>
+          </CardContent>
+        </Card>
 
-      {/* Professional Tools */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <FormulaBuilder />
-        <VersionControl />
-      </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Average IRR</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatPercentage(avgIRR)}</div>
+            <p className="text-xs text-muted-foreground">
+              Portfolio average
+            </p>
+          </CardContent>
+        </Card>
 
-      {/* Enhanced Navigation to Advanced Pages */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Button 
-          variant="outline" 
-          className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-blue-50 hover:border-blue-200 transition-all duration-200"
-          onClick={handleNavigateToAnalytics}
-        >
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-blue-600" />
-            <span className="font-semibold">Advanced Analytics</span>
-          </div>
-          <span className="text-xs text-muted-foreground">Multi-tab analysis & insights</span>
-          <ArrowRight className="h-4 w-4 text-blue-600" />
-        </Button>
-        <Button 
-          variant="outline" 
-          className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-green-50 hover:border-green-200 transition-all duration-200"
-          onClick={handleNavigateToValuations}
-        >
-          <div className="flex items-center gap-2">
-            <Calculator className="h-6 w-6 text-green-600" />
-            <span className="font-semibold">Valuations Management</span>
-          </div>
-          <span className="text-xs text-muted-foreground">Track & manage valuations</span>
-          <ArrowRight className="h-4 w-4 text-green-600" />
-        </Button>
-      </div>
-
-      {selectedCompany && (
-        <Tabs defaultValue="metrics">
-          <TabsList>
-            <TabsTrigger value="metrics">Financial Metrics</TabsTrigger>
-            <TabsTrigger value="upload">Data Collection</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="metrics">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <MetricCard title="Revenue" value="$15.2M" change="↑ 3.5%" trend="up" />
-              <MetricCard title="EBITDA" value="$4.1M" change="↑ 2.1%" trend="up" />
-              <MetricCard title="IRR" value="12.4%" change="→" trend="neutral" />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total MOIC</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {totalInvested > 0 
+                ? (totalPortfolioValue / totalInvested).toFixed(2) + 'x'
+                : '0x'
+              }
             </div>
-            <ChartCard title="Quarterly IRR" />
-          </TabsContent>
+            <p className="text-xs text-muted-foreground">
+              Multiple on invested capital
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-          <TabsContent value="upload">
+      {/* Main Content Grid */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Portfolio Companies Section */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>Portfolio Companies</CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push('/dashboard/portfolio')}
+              >
+                View All
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {companies.length === 0 ? (
+              <div className="text-center py-8">
+                <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">No portfolio companies yet</p>
+                <Button
+                  onClick={() => router.push('/dashboard/portfolio/new')}
+                  variant="outline"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Company
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {companies.slice(0, 5).map((company) => (
+                  <Link
+                    key={company.id}
+                    href={`/dashboard/companies/${company.id}`}
+                    className="block p-4 border rounded-lg hover:bg-accent transition-colors"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold">{company.company_name}</h3>
+                          <Badge variant="outline" className="text-xs">
+                            {company.sector || 'N/A'}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                          <div>
+                            <span>Value: </span>
+                            <span className="font-medium text-foreground">
+                              {formatCurrency(company.current_fair_value)}
+                            </span>
+                          </div>
+                          <div>
+                            <span>IRR: </span>
+                            <span className="font-medium text-foreground">
+                              {formatPercentage(company.irr)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* News Tracker */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              <CardTitle>News Tracker</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Latest news and updates from your portfolio companies
+              </p>
+              <Button variant="outline" size="sm" className="w-full">
+                <Plus className="w-4 h-4 mr-2" />
+                Add News Item
+              </Button>
+              <div className="text-center py-4 text-sm text-muted-foreground">
+                No news items yet
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Workflow Integrations & Document Upload */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Workflow Integrations */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <LinkIcon className="h-5 w-5" />
+              <CardTitle>Workflow Integrations</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Connect your workflow tools like Notion, Slack, Asana, and more
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" className="w-full">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Notion
+                </Button>
+                <Button variant="outline" size="sm" className="w-full">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Slack
+                </Button>
+                <Button variant="outline" size="sm" className="w-full">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Asana
+                </Button>
+                <Button variant="outline" size="sm" className="w-full">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Jira
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Document Upload */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              <CardTitle>Document Upload</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
             <FileDropZone onFilesAccepted={handleFileUpload} />
-          </TabsContent>
-        </Tabs>
-      )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Signoff Processes & Latest Activities */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Signoff Processes */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5" />
+              <CardTitle>Signoff Processes</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Clock className="h-4 w-4 text-yellow-600" />
+                  <div>
+                    <p className="text-sm font-medium">Document Review</p>
+                    <p className="text-xs text-muted-foreground">Pending approval</p>
+                  </div>
+                </div>
+                <Badge variant="outline">Pending</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground text-center py-2">
+                No active signoff processes
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Latest Activities */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              <CardTitle>Latest Activities</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {companies.length > 0 ? (
+                companies.slice(0, 5).map((company) => (
+                  <div key={company.id} className="flex items-center gap-3 p-2 border rounded">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{company.company_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Updated {new Date(company.updated_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Link href={`/dashboard/companies/${company.id}`}>
+                      <Button variant="ghost" size="sm">
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No recent activities
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

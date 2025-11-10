@@ -1,22 +1,19 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from '@supabase/supabase-js'
 
-// Lazy initialization to avoid build-time errors
-let supabaseClient: any = null
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = () => {
-  if (!supabaseClient) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Missing Supabase environment variables')
-    }
-    
-    supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
-  }
-  
-  return supabaseClient
+// Create client with fallback values for build time
+// Actual values will be replaced by Vercel at build time
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key'
+)
+
+// Runtime check - only throw when actually using Supabase (not during build)
+if (typeof window !== 'undefined' && (!supabaseUrl || !supabaseAnonKey)) {
+  console.error('Missing Supabase environment variables. Please check your Vercel environment variables.')
+  // Don't throw during build - let it fail gracefully at runtime
 }
 
 // Database Types
@@ -70,6 +67,13 @@ export interface PortfolioCompany {
   created_by?: string
   tags?: string[]
   notes?: string
+  
+  // Additional Fields for 4-Quadrant View
+  business_description?: string
+  investment_thesis?: string
+  entry_valuation?: number
+  recent_valuation?: number
+  implied_figure?: number
 }
 
 export interface Contact {
@@ -162,51 +166,102 @@ export interface PerformanceUpdate {
 export const portfolioService = {
   // Get all portfolio companies for a user
   async getCompanies(userId: string) {
-    const { data, error } = await supabase()
-      .from('portfolio_companies')
-      .select('*')
-      .eq('created_by', userId)
-      .order('created_at', { ascending: false })
-    
-    if (error) throw error
-    return data
+    try {
+      const { data, error } = await supabase
+        .from('portfolio_companies')
+        .select('*')
+        .eq('created_by', userId)
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        // Check if it's a "table doesn't exist" error
+        if (error.code === 'PGRST116' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+          console.warn('portfolio_companies table does not exist yet');
+          return [] as PortfolioCompany[]
+        }
+        throw error
+      }
+      return (data || []) as PortfolioCompany[]
+    } catch (error) {
+      // Handle any other errors gracefully
+      const err = error as { code?: string; message?: string }
+      if (err?.code === 'PGRST116' || err?.message?.includes('relation') || err?.message?.includes('does not exist')) {
+        console.warn('portfolio_companies table does not exist yet');
+        return [] as PortfolioCompany[]
+      }
+      throw error
+    }
+  },
+
+  // Get a single portfolio company by ID
+  async getCompany(companyId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('portfolio_companies')
+        .select('*')
+        .eq('id', companyId)
+        .single()
+      
+      if (error) {
+        // Check if it's a "table doesn't exist" or "no rows" error
+        if (error.code === 'PGRST116' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+          console.warn('portfolio_companies table does not exist yet');
+          return null
+        }
+        if (error.code === 'PGRST116' || error.message?.includes('No rows')) {
+          return null
+        }
+        throw error
+      }
+      return data as PortfolioCompany
+    } catch (error) {
+      // Handle any other errors gracefully
+      const err = error as { code?: string; message?: string }
+      if (err?.code === 'PGRST116' || err?.message?.includes('relation') || err?.message?.includes('does not exist')) {
+        console.warn('portfolio_companies table does not exist yet');
+        return null
+      }
+      throw error
+    }
   },
 
   // Create a new portfolio company
   async createCompany(company: Omit<PortfolioCompany, 'id' | 'created_at' | 'updated_at'>) {
-    const { data, error } = await supabase()
+    const { data, error } = await supabase
       .from('portfolio_companies')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .insert(company as any)
       .select()
       .single()
     
     if (error) throw error
-    return data
+    return data as PortfolioCompany
   },
 
   // Update a portfolio company
   async updateCompany(id: string, updates: Partial<PortfolioCompany>) {
-    const { data, error } = await supabase()
+    const { data, error } = await supabase
       .from('portfolio_companies')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update(updates as any)
       .eq('id', id)
       .select()
       .single()
     
     if (error) throw error
-    return data
+    return data as PortfolioCompany
   },
 
   // Get documents for a company
   async getCompanyDocuments(companyId: string) {
-    const { data, error } = await supabase()
+    const { data, error } = await supabase
       .from('documents')
       .select('*')
       .eq('portfolio_company_id', companyId)
       .order('created_at', { ascending: false })
     
     if (error) throw error
-    return data
+    return data as Document[]
   },
 
   // Upload a document
@@ -217,14 +272,14 @@ export const portfolioService = {
     const filePath = `documents/${metadata.portfolio_company_id}/${fileName}`
     
     // Upload file to Supabase Storage
-    const { error: uploadError } = await supabase().storage
+    const { error: uploadError } = await supabase.storage
       .from('documents')
       .upload(filePath, file)
     
     if (uploadError) throw uploadError
     
     // Get public URL
-    const { data: urlData } = supabase().storage
+    const { data: urlData } = supabase.storage
       .from('documents')
       .getPublicUrl(filePath)
     
@@ -238,13 +293,14 @@ export const portfolioService = {
       file_path: filePath
     }
     
-    const { data, error } = await supabase()
+    const { data, error } = await supabase
       .from('documents')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .insert(documentData as any)
       .select()
       .single()
     
     if (error) throw error
-    return data
+    return data as Document
   }
 }
