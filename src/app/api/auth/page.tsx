@@ -40,7 +40,8 @@ const AuthPage = () => {
   return (
     <div className={styles.container}>
       <div className={styles.logo}>
-        <img src="/logo.png" alt="Logo" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Logo" />
       </div>
       <form onSubmit={handleSubmit} className={styles.form}>
         <h2>{isSignUp ? 'Sign Up' : 'Sign In'}</h2>
