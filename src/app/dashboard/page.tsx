@@ -1,11 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { usePortfolioCompanies } from '@/hooks/features/usePortfolioCompanies';
+import { useAuth } from '@/auth/AuthProvider';
 import { 
   Building2, 
   DollarSign, 
@@ -41,7 +43,32 @@ function formatPercentage(value: number | undefined): string {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const { data: companies = [], isLoading, error } = usePortfolioCompanies();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (redirect will happen)
+  if (!user) {
+    return null;
+  }
 
   // Calculate aggregate metrics
   const totalPortfolioValue = companies.reduce((sum, c) => sum + (c.current_fair_value || 0), 0);
