@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "module": "commonjs",
+    "paths": {
+      "@portscope/db": ["../../packages/db"],
+      "@portscope/shared": ["../../packages/shared/src"],
+      "@portscope/extractor-client": ["../../packages/extractor-client/src"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

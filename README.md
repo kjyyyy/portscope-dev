@@ -1,199 +1,133 @@
-# PortScope Dev
+# Portscope
 
-A professional portfolio management platform built with Next.js 15, TypeScript, Supabase, and Tailwind CSS.
+**The family office autopilot.** Not software — outcomes.
 
-## Features
+Portscope replaces the fund administrator for small family offices. Documents arrive, an LLM extracts structured data, Temporal orchestrates the pipeline, and reconciled quarterly reports are delivered automatically.
 
-- **Supabase Authentication**: Secure email/password authentication with email confirmation
-- **B2B Partner Onboarding**: Company creation and linking during signup
-- **Portfolio Dashboard**: Overview of all companies, signoff processes, and latest activities
-- **Company Detail View**: 4-quadrant view with business details, financials, commentary, and investment thesis
-- **Monthly Performance Tracking**: Track performance metrics across companies
-- **Modern UI**: Built with Radix UI, Shadcn UI, and Tailwind CSS
+## Architecture
 
-## Getting Started
+```
+apps/
+  api/          → NestJS 10 API (Docker → cloud)
+  web/          → Next.js 15 (Vercel)
+  extractor/    → Python FastAPI document extraction (Docker → cloud)
+  worker/       → Temporal workflow workers (Docker → cloud)
+
+packages/
+  db/           → Prisma schema + client
+  shared/       → Shared TypeScript types
+  extractor-client/ → TS HTTP client for the extractor
+```
+
+## Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- Supabase account and project
-- Vercel account (for deployment)
+- Node.js 20+, pnpm 9+
+- Docker & Docker Compose
+- Python 3.11+ (for extractor, or run via Docker)
+- **One of**: Ollama (local), or API key for OpenRouter / Anthropic / HuggingFace / OpenAI
 
-### Installation
-
-```bash
-# Install dependencies
-npm install
-
-# Copy environment variables template
-cp env.example .env.local
-
-# Edit .env.local with your Supabase credentials
-```
-
-### Environment Variables
-
-Create a `.env.local` file with the following:
+### 1. Environment Setup
 
 ```bash
-# Supabase Configuration (Required)
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
-
-# Optional: Supabase Service Role Key (for server-side operations)
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-# Application Configuration
-NEXT_PUBLIC_APP_NAME=PortScope Dev
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+cp env.example .env
+# Edit .env — choose your LLM_PROVIDER and set keys
 ```
 
-### Database Setup
-
-1. **Create Supabase Project**: Go to [supabase.com/dashboard](https://supabase.com/dashboard) and create a new project
-
-2. **Run Schema**: Execute the SQL schema from `supabase/schema.sql` in your Supabase SQL Editor
-
-3. **Configure Authentication URLs**:
-   - Go to **Authentication** → **URL Configuration**
-   - Set **Site URL** to your production domain (e.g., `https://your-app.vercel.app`)
-   - Add **Redirect URLs**:
-     - `http://localhost:3000/auth/callback` (for local development)
-     - `https://your-app.vercel.app/auth/callback` (for production)
-
-### Development
+### 2. Start Infrastructure
 
 ```bash
-# Run development server
-npm run dev
-
-# Run without Turbopack (if you encounter issues)
-npm run dev:stable
-
-# Clean build cache
-npm run clean
-
-# Build for production
-npm run build
+docker compose up -d
+# Starts: PostgreSQL, Temporal, Redis, MinIO
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the application.
-
-## Project Structure
-
-```
-src/
-├── app/                    # Next.js app router
-│   ├── auth/              # Auth callback handler
-│   ├── dashboard/         # Dashboard pages
-│   │   ├── companies/    # Company detail pages
-│   │   └── page.tsx      # Dashboard overview
-│   ├── login/            # Login page
-│   ├── signup/           # Signup page
-│   └── api/              # API routes
-├── auth/                  # Authentication context
-│   └── AuthProvider.tsx  # Auth state management
-├── components/            # React components
-│   └── ui/              # Shadcn UI components
-├── hooks/                 # Custom React hooks
-│   └── features/        # Feature-specific hooks
-├── lib/                   # Utilities
-│   └── supabase.ts      # Supabase client
-└── types/                 # TypeScript types
-```
-
-## Technologies
-
-- **Next.js 15** - React framework with App Router
-- **TypeScript** - Type safety
-- **Supabase** - Authentication and database
-- **Tailwind CSS** - Styling
-- **Shadcn UI** - UI component library
-- **Radix UI** - Accessible primitives
-- **TanStack Query** - Data fetching and caching
-- **Recharts** - Data visualization
-- **Lucide React** - Icons
-
-## Authentication Flow
-
-1. **Sign Up**: User creates account with email/password
-2. **Email Confirmation**: Supabase sends confirmation email
-3. **Email Verification**: User clicks link, redirects to `/auth/callback`
-4. **Session Creation**: Callback page creates session and redirects to dashboard
-5. **Protected Routes**: Middleware protects dashboard routes
-
-## B2B Partner Onboarding
-
-During signup, users can optionally:
-- Provide company name and unique link
-- Link to existing company or create new one
-- Automatically associate user profile with company
-
-## Deployment
-
-### Deploy to Vercel
-
-1. **Push to GitHub**: Your code should be in a GitHub repository
-
-2. **Import to Vercel**:
-   - Go to [vercel.com](https://vercel.com)
-   - Sign in with GitHub
-   - Import your repository
-
-3. **Add Environment Variables** in Vercel:
-   ```bash
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
-   NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
-   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-   ```
-
-4. **Update Supabase Redirect URLs**:
-   - Add your Vercel domain to Supabase redirect URLs
-   - Update Site URL to your Vercel domain
-
-5. **Deploy!** Vercel will automatically build and deploy
-
-### Manual Deployment
+### 3. Install Dependencies & Generate DB Client
 
 ```bash
-npm run build
-npm start
+pnpm install
+cd packages/db && npx prisma generate && npx prisma db push && cd ../..
 ```
 
-## Development Scripts
+### 4. Start the API + Web and Seed Data
 
-- `npm run dev` - Start development server with Turbopack
-- `npm run dev:stable` - Start development server without Turbopack
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run clean` - Clean build cache
-- `npm run clean:build` - Clean and rebuild
-
-## Troubleshooting
-
-### Build Cache Issues
-
-If you encounter build errors, try:
 ```bash
-npm run clean
-npm run build
+# In a new terminal:
+pnpm dev
+# Wait for the API to start on port 3001, then seed:
+curl -X POST http://localhost:3001/api/seed
 ```
 
-### Email Confirmation Not Working
+### 5. Start the Extractor (Python)
 
-1. Check Supabase Dashboard → Authentication → URL Configuration
-2. Ensure redirect URLs include `/auth/callback` path
-3. Verify Site URL is set to production domain (not localhost)
-4. Check browser console for errors
+```bash
+cd apps/extractor
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+uvicorn src.api.main:app --port 8001 --reload
+```
 
-### Supabase Connection Issues
+### 6. Open in Browser
 
-1. Verify environment variables are set correctly
-2. Check Supabase project is active
-3. Ensure RLS policies are configured (if needed)
+- **Staff Review UI**: http://localhost:3000/queue
+- **Client Portal**: http://localhost:3000/portal?token=demo
+- **Extractor Health**: http://localhost:8001/health
+- **Temporal UI**: http://localhost:8080
 
-## License
+## AI Provider Configuration
 
-MIT License - see LICENSE file for details.
+The extractor supports **multiple LLM providers** via the `LLM_PROVIDER` env var:
+
+| Provider | `LLM_PROVIDER` | Required Env Vars | Notes |
+|----------|----------------|-------------------|-------|
+| **Ollama** (default) | `ollama` | `LLM_MODEL` | Free, local. `ollama pull llama3.1:8b` first |
+| **Anthropic** | `anthropic` | `ANTHROPIC_API_KEY` | Best accuracy, paid |
+| **OpenRouter** | `openrouter` | `LLM_API_KEY`, `LLM_MODEL` | Access to 100+ models |
+| **HuggingFace** | `huggingface` | `LLM_API_KEY`, `LLM_MODEL` | Free tier available |
+| **OpenAI** | `openai` | `LLM_API_KEY`, `LLM_MODEL` | GPT-4o, etc |
+| **vLLM** | `vllm` | `LLM_BASE_URL`, `LLM_MODEL` | Self-hosted GPU |
+| **Any OpenAI-compatible** | `custom` | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | LM Studio, Together, Groq, etc. |
+
+### Ollama Quick Setup (Free, Local)
+
+```bash
+# Install Ollama: https://ollama.com
+ollama pull llama3.1:8b
+# .env already defaults to Ollama — just start the app
+```
+
+### OpenRouter Setup (100+ models, pay-per-use)
+
+```bash
+# In .env:
+LLM_PROVIDER="openrouter"
+LLM_API_KEY="sk-or-v1-your-key"
+LLM_MODEL="anthropic/claude-3.5-sonnet"   # or any model on openrouter.ai
+```
+
+## Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| Web (Next.js) | 3000 | Staff review UI + Client portal |
+| API (NestJS) | 3001 | Core REST API |
+| Extractor (FastAPI) | 8001 | Document classification + extraction |
+| PostgreSQL | 5432 | Primary database |
+| Temporal | 7233 | Workflow orchestration |
+| Temporal UI | 8080 | Workflow dashboard |
+| MinIO | 9000/9001 | S3-compatible object storage |
+| Redis | 6379 | Cache + sessions |
+
+## Key Screens
+
+- `/queue` — Staff review queue (inbox-style, pending documents)
+- `/documents/[id]` — PDF + extracted fields side-by-side review
+- `/portal` — James's client portal (net worth, report download)
+
+## Tech Stack
+
+- **TypeScript**: NestJS 10, Next.js 15, Prisma 6, Temporal, Zod
+- **Python**: FastAPI, Pydantic v2, multi-provider LLM abstraction
+- **Infrastructure**: Docker Compose, PostgreSQL 16 + pgvector, Redis, MinIO
+- **UI**: Tailwind CSS v4, shadcn/ui design system
+- **LLM**: Provider-agnostic (Ollama, Anthropic, OpenRouter, HuggingFace, OpenAI, vLLM)

@@ -1,0 +1,111 @@
+# Portscope — Project Context for Cursor AI
+
+## Role
+You are a senior full-stack engineer building Portscope — an AI-powered family
+office autopilot service. You have deep expertise in TypeScript/NestJS, Python
+ML pipelines, Docker/cloud infrastructure, and financial services domain knowledge
+(alternative investments, capital calls, fund administration).
+
+## What Portscope IS
+Portscope is NOT a portfolio dashboard. It is an async document processing and
+outcome-delivery service that REPLACES the fund administrator for small family
+offices (<$500M AUM).
+
+The product:
+1. Alternative investment documents arrive by email or manual upload
+2. A managed VLM API (Claude Vision / Document AI) extracts structured data
+3. Temporal workflows orchestrate review, persistence, and delivery
+4. Reconciled quarterly reports are delivered to families by email + portal
+5. Humans barely touch any interface. The autopilot does the work.
+
+Business model (Sequoia "Services as Software" thesis):
+- We sell OUTCOMES: closed books, processed documents, delivered reports
+- We charge per document + monthly retainer per entity under management
+- We REPLACE the fund admin ($3-8K/mo), not add to their software stack
+
+## Monorepo structure (pnpm workspaces + Turborepo)
+portscope-dev/
+├── apps/
+│   ├── api/          # NestJS 10 API (Docker → cloud)
+│   ├── web/          # Next.js 15 App Router (Vercel)
+│   ├── extractor/    # Python FastAPI — VLM extraction (Docker → cloud)
+│   └── worker/       # Temporal workflow workers (Docker → cloud)
+├── packages/
+│   ├── db/           # Prisma 6 schema + generated client
+│   ├── shared/       # Shared TypeScript types (ExtractedField, Document, etc.)
+│   └── extractor-client/  # TypeScript HTTP client for Python extractor
+├── docker-compose.yml
+└── turbo.json
+
+## Web app route structure (apps/web)
+Two route groups with separate auth:
+(review)/ — Internal staff only (staff analyst)
+  /queue              → Review Queue: inbox-style, pending docs
+  /documents/[id]     → PDF + extracted fields side-by-side
+  /reports/[id]       → Draft report approval before delivery to family
+(portal)/ — Client read-only (family principal)
+  /portal             → Net worth + 4 stats + report download
+  /portal/reports     → Report history with PDF downloads
+  /portal/funds       → Fund list with IRR/TVPI/DPI
+  Entry: magic link email ONLY. No password. 7-day session cookie.
+
+## Tech stack — NEVER deviate without discussion
+
+TypeScript stack (apps/api, apps/web, apps/worker):
+- NestJS 10 for the API (not Express, not Fastify directly)
+- Prisma 6 ORM (never raw SQL queries, never TypeORM)
+- Temporal TypeScript SDK for ALL async workflows
+- Next.js 15 App Router (never Pages Router)
+- shadcn/ui + Tailwind CSS for UI
+- zod for ALL input validation
+- Auth.js v5 (magic links for portal, JWT for staff review UI)
+
+Python stack (apps/extractor):
+- FastAPI + uvicorn (not Flask, not Django)
+- Pydantic v2 for ALL request/response schemas
+- Managed VLM API (Claude Vision / Document AI) for extraction
+- Docling as primary PDF parser (unstructured as fallback)
+
+Infrastructure:
+- Docker Compose for local dev (postgres, temporal, redis)
+- All services containerized and cloud-deployable
+- PostgreSQL 16 + pgvector via Prisma
+- S3-compatible object storage for documents
+
+## Core domain model (Prisma)
+FamilyOffice — top-level tenant (everything scoped to this)
+Entity — trust, LLC, SPV, individual; nested tree (self-referential parentId)
+Fund — PE/VC/RE/credit fund (manager, vintage, strategy, geography, currency)
+Holding — one Entity's position in one Fund
+CapitalEvent — CALL or DISTRIBUTION, sourced from a Document
+Document — ingested PDF (type, status, s3Key, extraction JSON, workflowId)
+DocumentChunk — pgvector embeddings for RAG queries
+
+## Document pipeline (ingest.workflow.ts)
+1. Document arrives (upload or email)
+2. classifyDocument → CAPITAL_CALL | DISTRIBUTION | NAV_STATEMENT | K1
+3. extractDocument → calls extractor → fields[] with { value, confidence: 0-1 }
+4. If any field.confidence < 0.85 → notifyReview → await approval (7 days max)
+5. storeExtraction → persist Document record with extraction JSON
+6. If CAPITAL_CALL or DISTRIBUTION → persistCapitalEvents
+7. Store corrections in training dataset if user made edits
+
+## Code standards
+TypeScript:
+- Strict mode always. No `any` types.
+- Money: always Decimal/string in API/DB, never float. Use decimal.js.
+- Dates: UTC ISO strings in API responses, DateTime in Prisma.
+- EVERY database query MUST include familyOfficeId in WHERE clause.
+- Services own business logic. Controllers handle HTTP only.
+
+Python:
+- Type hints everywhere.
+- All request/response types are Pydantic BaseModel subclasses.
+- Each extractor inherits BaseExtractor, implements extract().
+- Every extracted field: { "value": Any, "confidence": float }
+
+## Confidence scoring — first-class UX concern
+- >= 0.95: auto-approve (green badge)
+- 0.85-0.94: accept but surface (blue badge)
+- 0.70-0.84: flag for review (amber badge)
+- < 0.70: require correction (red badge)

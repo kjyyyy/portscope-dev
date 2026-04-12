@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portscope — Technical Blueprint &amp; Implementation Reference</title>
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --fg: #e8edf5;
+      --muted: #8390a8;
+      --card: #161b24;
+      --border: #252d40;
+      --gold: #c49a38;
+      --green: #28a084;
+      --blue: #4d8ef0;
+      --red: #d45c5c;
+      --amber: #f59e0b;
+      --font-sans: 'DM Sans', system-ui, sans-serif;
+      --font-serif: 'Cormorant Garamond', Georgia, serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--fg); font-family: var(--font-sans); line-height: 1.7; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
+    h1 { font-family: var(--font-serif); font-size: 2.8em; font-weight: 300; margin-bottom: 8px; }
+    h1 em { color: var(--gold); font-style: italic; }
+    h2 { font-size: 1.4em; color: var(--gold); margin: 48px 0 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    h3 { font-size: 1.1em; margin: 24px 0 8px; color: var(--fg); }
+    h4 { font-size: 0.95em; color: var(--muted); margin: 16px 0 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    p, li { color: #c0c8d8; font-size: 0.95em; }
+    ul, ol { padding-left: 20px; margin: 8px 0; }
+    li { margin-bottom: 4px; }
+    code { font-family: var(--font-mono); background: var(--card); padding: 2px 6px; border-radius: 3px; font-size: 0.85em; color: var(--gold); }
+    pre { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 16px; overflow-x: auto; margin: 12px 0; font-family: var(--font-mono); font-size: 0.82em; line-height: 1.5; color: var(--fg); }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.75em; font-family: var(--font-mono); }
+    .badge-gold { background: rgba(196,154,56,0.15); color: var(--gold); }
+    .badge-green { background: rgba(40,160,132,0.15); color: var(--green); }
+    .badge-blue { background: rgba(77,142,240,0.15); color: var(--blue); }
+    .badge-red { background: rgba(212,92,92,0.15); color: var(--red); }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.88em; }
+    th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.05em; }
+    .hero { text-align: center; padding: 80px 0 60px; }
+    .hero .mono { font-family: var(--font-mono); font-size: 0.75em; letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase; }
+    .hero p { max-width: 500px; margin: 16px auto; color: var(--muted); }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 12px 0; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .status-done { color: var(--green); }
+    .status-wip { color: var(--amber); }
+    .status-next { color: var(--muted); }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .toc { columns: 2; column-gap: 24px; }
+    .toc li { break-inside: avoid; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+    .updated { font-size: 0.8em; color: var(--muted); font-family: var(--font-mono); }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="hero">
+  <p class="mono">◆ Portscope</p>
+  <h1>The family office <em>autopilot.</em></h1>
+  <p>Documents arrive. Books close. Reports deliver. You barely touch a thing.</p>
+  <p class="updated">Last updated: April 10, 2026 · MVP Implementation Reference</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>Table of Contents</h2>
+<ul class="toc">
+  <li><a href="#vision">Vision &amp; Value Proposition</a></li>
+  <li><a href="#architecture">Architecture Overview</a></li>
+  <li><a href="#monorepo">Monorepo Structure</a></li>
+  <li><a href="#ai-providers">AI / LLM Provider System</a></li>
+  <li><a href="#extraction">Document Extraction Pipeline</a></li>
+  <li><a href="#confidence">Confidence Scoring</a></li>
+  <li><a href="#api">REST API (NestJS)</a></li>
+  <li><a href="#frontend">Frontend (Next.js)</a></li>
+  <li><a href="#storage">Object Storage (MinIO / S3)</a></li>
+  <li><a href="#database">Database Schema</a></li>
+  <li><a href="#workflows">Temporal Workflows</a></li>
+  <li><a href="#auth">Authentication</a></li>
+  <li><a href="#startup">How to Start</a></li>
+  <li><a href="#status">Implementation Status</a></li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="vision">Vision &amp; Value Proposition</h2>
+<p>Portscope replaces the fund administrator for small family offices (AUM $50M–$500M). The core value chain:</p>
+<ol>
+  <li><strong>Documents arrive</strong> (capital calls, distributions, NAV statements, K-1s) via upload or email.</li>
+  <li><strong>AI extracts structured data</strong> — fund name, amount, dates, routing numbers — with confidence scores.</li>
+  <li><strong>Staff review</strong> only fields the AI is uncertain about (flagged below 85% confidence).</li>
+  <li><strong>Approved data flows</strong> into portfolio holdings, capital events, and reporting automatically.</li>
+  <li><strong>Quarterly reports</strong> are generated and delivered to family members via a branded client portal.</li>
+</ol>
+
+<h3>Personas</h3>
+<div class="grid-2">
+  <div class="card">
+    <h4>Staff Analyst (Persona)</h4>
+    <p>Reviews flagged documents, corrects extraction errors, approves capital events. Sees the review queue and document detail pages.</p>
+  </div>
+  <div class="card">
+    <h4>Family Principal (Persona)</h4>
+    <p>Checks portfolio value, reviews quarterly reports, downloads PDFs via a branded client portal accessed via magic link.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="architecture">Architecture Overview</h2>
+<pre>
+┌──────────────┐     ┌────────────┐     ┌───────────────┐     ┌─────────────┐
+│  Next.js 15  │────▶│  NestJS 10 │────▶│ Python FastAPI│────▶│  LLM (any)  │
+│  (Frontend)  │     │  (REST API)│     │  (Extractor)  │     │Ollama/Claude│
+│  Port 3000   │     │  Port 3001 │     │  Port 8001    │     │/OpenRouter  │
+└──────────────┘     └─────┬──────┘     └───────┬───────┘     └─────────────┘
+                           │                    │
+                    ┌──────┴──────┐      ┌──────┴──────┐
+                    │ PostgreSQL  │      │  MinIO (S3) │
+                    │  + pgvector │      │  Port 9000  │
+                    │  Port 5432  │      └─────────────┘
+                    └──────┬──────┘
+                           │
+                    ┌──────┴──────┐     ┌─────────────┐
+                    │  Temporal   │     │  Redis 7    │
+                    │  Port 7233  │     │  Port 6379  │
+                    └─────────────┘     └─────────────┘
+</pre>
+
+<h3>Key Decisions</h3>
+<table>
+  <tr><th>Decision</th><th>Choice</th><th>Rationale</th></tr>
+  <tr><td>LLM Strategy</td><td><strong>Provider-agnostic</strong></td><td>Swap between Ollama (free local), OpenRouter, Anthropic, HuggingFace, OpenAI, vLLM via env vars</td></tr>
+  <tr><td>Object Storage</td><td>MinIO (local) / S3 (prod)</td><td>S3-compatible API; no AWS account needed for dev; MinIO runs in Docker</td></tr>
+  <tr><td>Multi-tenancy</td><td><code>familyOfficeId</code> scoping</td><td>All queries filtered by tenant; seed creates a demo family office</td></tr>
+  <tr><td>PDF Processing</td><td>pdfplumber (Python)</td><td>Extracts text from uploaded PDFs before sending to LLM</td></tr>
+  <tr><td>Workflow Engine</td><td>Temporal</td><td>Durable workflows for ingest pipeline; human-in-the-loop approval via signals</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="monorepo">Monorepo Structure</h2>
+<pre>
+portscope-dev/
+├── apps/
+│   ├── api/                   # NestJS 10 REST API
+│   │   ├── src/
+│   │   │   ├── documents/     # Upload, queue, review, approve, flag
+│   │   │   ├── entities/      # CRUD for trusts, LLCs, SPVs
+│   │   │   ├── portfolio/     # Holdings, funds, capital events
+│   │   │   ├── reporting/     # Portal overview, reports
+│   │   │   ├── auth/          # JWT guard, types
+│   │   │   ├── database/      # PrismaService (global)
+│   │   │   ├── storage/       # S3/MinIO upload + presigned URLs
+│   │   │   └── seed/          # Auto-seeds dev data on startup
+│   │   └── Dockerfile
+│   │
+│   ├── web/                   # Next.js 15 App Router
+│   │   ├── app/
+│   │   │   ├── (review)/      # Staff: queue, document review
+│   │   │   ├── portal/        # Client: portfolio overview
+│   │   │   ├── api/           # Next.js API routes (BFF)
+│   │   │   └── page.tsx       # Landing page
+│   │   ├── components/
+│   │   │   ├── document-review/  # ExtractionFields, PDFViewer, ReviewActions
+│   │   │   ├── portal/          # StatCard, ReportDownloadCard
+│   │   │   └── ui/              # ConfidenceBadge
+│   │   └── lib/               # api.ts, utils.ts
+│   │
+│   ├── extractor/             # Python FastAPI
+│   │   ├── src/
+│   │   │   ├── api/           # routes.py (classify, extract, upload, process)
+│   │   │   ├── extractors/    # router.py (LLM-based extraction)
+│   │   │   ├── models/        # schemas.py, providers.py (LLM abstraction)
+│   │   │   ├── storage/       # s3.py (MinIO/S3), pdf.py (pdfplumber)
+│   │   │   └── confidence/    # scorer.py (heuristic adjustment)
+│   │   └── Dockerfile
+│   │
+│   └── worker/                # Temporal workers
+│       ├── src/
+│       │   ├── workflows/     # ingest.workflow.ts
+│       │   └── activities/    # ingest.activities.ts
+│       └── Dockerfile
+│
+├── packages/
+│   ├── db/                    # Prisma schema + client
+│   ├── shared/                # TypeScript types (ExtractedField, etc.)
+│   └── extractor-client/      # TS HTTP client for extractor
+│
+├── docker-compose.yml         # PostgreSQL, Redis, Temporal, MinIO
+├── turbo.json                 # Turborepo pipeline
+├── pnpm-workspace.yaml
+└── .env                       # LLM_PROVIDER, DATABASE_URL, S3 config
+</pre>
+
+<p>Tools: <code>pnpm</code> workspaces · <code>Turborepo</code> for builds · <code>Docker Compose</code> for infrastructure.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="ai-providers">AI / LLM Provider System</h2>
+<p>The extractor uses a <strong>provider abstraction layer</strong> (<code>src/models/providers.py</code>) that allows swapping LLM backends via a single environment variable.</p>
+
+<h3>Supported Providers</h3>
+<table>
+  <tr><th>Provider</th><th><code>LLM_PROVIDER</code></th><th>Required Env</th><th>Cost</th></tr>
+  <tr><td><strong>Ollama</strong> (default)</td><td><code>ollama</code></td><td><code>LLM_MODEL</code></td><td>Free (local GPU/CPU)</td></tr>
+  <tr><td><strong>OpenRouter</strong></td><td><code>openrouter</code></td><td><code>LLM_API_KEY</code>, <code>LLM_MODEL</code></td><td>Pay-per-use (100+ models)</td></tr>
+  <tr><td><strong>HuggingFace</strong></td><td><code>huggingface</code></td><td><code>LLM_API_KEY</code>, <code>LLM_MODEL</code></td><td>Free tier available</td></tr>
+  <tr><td><strong>Anthropic</strong></td><td><code>anthropic</code></td><td><code>ANTHROPIC_API_KEY</code></td><td>Paid (Claude)</td></tr>
+  <tr><td><strong>OpenAI</strong></td><td><code>openai</code></td><td><code>LLM_API_KEY</code>, <code>LLM_MODEL</code></td><td>Paid (GPT-4o)</td></tr>
+  <tr><td><strong>vLLM</strong></td><td><code>vllm</code></td><td><code>LLM_BASE_URL</code>, <code>LLM_MODEL</code></td><td>Self-hosted GPU</td></tr>
+  <tr><td><strong>Custom</strong></td><td><code>custom</code></td><td><code>LLM_BASE_URL</code>, <code>LLM_API_KEY</code>, <code>LLM_MODEL</code></td><td>Any OpenAI-compatible API</td></tr>
+</table>
+
+<h3>How It Works</h3>
+<pre>
+# providers.py architecture:
+class LLMProvider(ABC):
+    async def chat(prompt: str, max_tokens: int) -> str
+
+class AnthropicProvider(LLMProvider):    # Native Anthropic SDK
+class OpenAICompatibleProvider(LLMProvider):  # Works with Ollama, OpenRouter, HF, vLLM, etc.
+
+def get_provider() -> LLMProvider:
+    # Factory: reads LLM_PROVIDER env var, returns correct provider
+</pre>
+
+<h3>Quick Setup Examples</h3>
+<pre>
+# Ollama (free, local):
+LLM_PROVIDER=ollama
+LLM_MODEL=llama3.1:8b
+# Then: ollama pull llama3.1:8b
+
+# OpenRouter (pay-per-use, no GPU):
+LLM_PROVIDER=openrouter
+LLM_API_KEY=sk-or-v1-your-key
+LLM_MODEL=anthropic/claude-3.5-sonnet
+
+# HuggingFace (free tier):
+LLM_PROVIDER=huggingface
+LLM_API_KEY=hf_your-token
+LLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="extraction">Document Extraction Pipeline</h2>
+<pre>
+Upload PDF ──▶ MinIO (S3) ──▶ NestJS creates DB record ──▶ Background processing:
+                                                              │
+                                                    ┌─────────┴──────────┐
+                                                    │ 1. Download from S3│
+                                                    │ 2. PDF → text      │
+                                                    │    (pdfplumber)    │
+                                                    │ 3. Classify (LLM)  │
+                                                    │ 4. Extract (LLM)   │
+                                                    │ 5. Score confidence │
+                                                    │ 6. Update DB       │
+                                                    │    status=REVIEW   │
+                                                    │    or AUTO_APPROVED│
+                                                    └────────────────────┘
+</pre>
+
+<h3>Extractor API Endpoints</h3>
+<table>
+  <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+  <tr><td>GET</td><td><code>/health</code></td><td>Health check</td></tr>
+  <tr><td>POST</td><td><code>/classify</code></td><td>Classify document type from S3 key</td></tr>
+  <tr><td>POST</td><td><code>/extract</code></td><td>Extract fields from classified document</td></tr>
+  <tr><td>POST</td><td><code>/upload</code></td><td>Upload file to S3 and return key</td></tr>
+  <tr><td>POST</td><td><code>/process</code></td><td>Upload + classify + extract in one call</td></tr>
+</table>
+
+<h3>Document Types</h3>
+<table>
+  <tr><th>Type</th><th>Fields Extracted</th></tr>
+  <tr><td><span class="badge badge-gold">CAPITAL_CALL</span></td><td>fund_name, entity_name, amount, due_date, commitment_%, aba_routing, account_name, call_date</td></tr>
+  <tr><td><span class="badge badge-green">DISTRIBUTION</span></td><td>fund_name, entity_name, amount, distribution_date, type, return_of_capital, gain</td></tr>
+  <tr><td><span class="badge badge-blue">NAV_STATEMENT</span></td><td>fund_name, entity_name, nav_value, as_of_date, commitment, called, distributed, IRR, TVPI, DPI</td></tr>
+  <tr><td><span class="badge badge-red">K1</span></td><td>partnership_name, partner_name, EIN, tax_year, ordinary_income, rental_income, guaranteed_payments, capital_gains</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="confidence">Confidence Scoring</h2>
+<p>4-tier system combining LLM self-reported confidence with heuristic validation:</p>
+<table>
+  <tr><th>Tier</th><th>Range</th><th>Action</th><th>Visual</th></tr>
+  <tr><td><span class="badge badge-green">High</span></td><td>≥ 95%</td><td>Auto-approve (if all fields high)</td><td>Green badge</td></tr>
+  <tr><td><span class="badge badge-blue">Good</span></td><td>85–94%</td><td>Accept, surface for review</td><td>Blue badge</td></tr>
+  <tr><td><span class="badge badge-gold">Review</span></td><td>70–84%</td><td>Flag for human review</td><td>Amber badge + ⚠</td></tr>
+  <tr><td><span class="badge badge-red">Must verify</span></td><td>&lt; 70%</td><td>Require manual correction</td><td>Red badge + ✕</td></tr>
+</table>
+
+<h3>Heuristic Validators</h3>
+<ul>
+  <li><strong>Money fields</strong>: Strips <code>$,</code> and checks parseable float &gt; 0</li>
+  <li><strong>Date fields</strong>: Regex matches ISO, US, and named formats</li>
+  <li><strong>Routing numbers</strong>: Must be exactly 9 digits</li>
+  <li><strong>EINs</strong>: Must be exactly 9 digits</li>
+  <li><strong>Percentages</strong>: Must be 0–100 range</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="api">REST API (NestJS)</h2>
+<h3>Core Endpoints</h3>
+<table>
+  <tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr>
+  <tr><td>GET</td><td><code>/api/documents/queue</code></td><td>Staff</td><td>Review queue with pending count</td></tr>
+  <tr><td>GET</td><td><code>/api/documents/:id</code></td><td>Staff</td><td>Document detail + presigned URL + extracted fields</td></tr>
+  <tr><td>POST</td><td><code>/api/documents/:id/approve</code></td><td>Staff</td><td>Approve with optional corrections</td></tr>
+  <tr><td>POST</td><td><code>/api/documents/:id/flag</code></td><td>Staff</td><td>Flag document with reason</td></tr>
+  <tr><td>POST</td><td><code>/api/documents/upload</code></td><td>Staff</td><td>Upload PDF → S3 → background classify/extract</td></tr>
+  <tr><td>GET</td><td><code>/api/entities</code></td><td>Staff</td><td>List entities (trusts, LLCs)</td></tr>
+  <tr><td>GET</td><td><code>/api/portfolio/overview</code></td><td>Staff</td><td>NAV totals, next call, holdings count</td></tr>
+  <tr><td>GET</td><td><code>/api/portfolio/funds</code></td><td>Staff</td><td>All funds with holdings</td></tr>
+  <tr><td>GET</td><td><code>/api/portfolio/events</code></td><td>Staff</td><td>Capital events timeline</td></tr>
+  <tr><td>GET</td><td><code>/api/reporting/portal-overview</code></td><td>Client</td><td>Net worth, stats, latest report</td></tr>
+  <tr><td>GET</td><td><code>/api/reporting/reports</code></td><td>Client</td><td>Report history</td></tr>
+</table>
+
+<h3>Upload Flow</h3>
+<pre>
+POST /api/documents/upload (multipart/form-data with 'file' field)
+  1. Upload file to MinIO → s3Key
+  2. Create Document record (status=PROCESSING)
+  3. Background: call extractor /classify → /extract
+  4. Update Document with fields, confidence, status (REVIEW or AUTO_APPROVED)
+  5. Return document record immediately (processing continues async)
+</pre>
+
+<h3>Auto-seeded Dev Data</h3>
+<p>Seed data via <code>POST /api/seed</code> (dev mode only). Creates:</p>
+<ul>
+  <li><strong>Demo Family Office</strong> with staff user and client user</li>
+  <li><strong>3 entities</strong>: Family Trust I, Ventures LLC</li>
+  <li><strong>3 funds</strong>: Real Estate Fund IX, PE Americas XII, Credit Fund VIII</li>
+  <li><strong>3 holdings</strong> with realistic NAV/commitment/distribution data</li>
+  <li><strong>2 capital events</strong>: pending call ($847K), completed distribution ($1.24M)</li>
+  <li><strong>3 documents</strong>: capital call (REVIEW), distribution (AUTO_APPROVED), NAV statement (REVIEW)</li>
+  <li><strong>1 delivered report</strong>: Q1 2026 Full Portfolio Review</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="frontend">Frontend (Next.js 15)</h2>
+
+<h3>Route Map</h3>
+<table>
+  <tr><th>Route</th><th>Component</th><th>Data Source</th><th>Status</th></tr>
+  <tr><td><code>/</code></td><td>Landing page</td><td>Static</td><td class="status-done">✓ Done</td></tr>
+  <tr><td><code>/queue</code></td><td>Review queue</td><td><code>GET /api/documents/queue</code></td><td class="status-done">✓ Wired to API</td></tr>
+  <tr><td><code>/documents/[id]</code></td><td>Document review</td><td><code>GET /api/documents/:id</code></td><td class="status-done">✓ Wired to API</td></tr>
+  <tr><td><code>/portal</code></td><td>Client portal</td><td><code>GET /api/reporting/portal-overview</code></td><td class="status-done">✓ Wired to API</td></tr>
+</table>
+
+<h3>Key Components</h3>
+<ul>
+  <li><strong>ExtractionFields</strong> — Editable field list with confidence badges, correction tracking</li>
+  <li><strong>PDFViewer</strong> — Renders uploaded PDFs via presigned MinIO URL (iframe); falls back to placeholder</li>
+  <li><strong>ReviewActions</strong> — Approve, Flag, Skip buttons wired to real API endpoints</li>
+  <li><strong>ConfidenceBadge</strong> — 4-tier color system (green/blue/amber/red) with icon</li>
+  <li><strong>Upload Widget</strong> — File input in queue header; uploads to <code>POST /api/documents/upload</code></li>
+</ul>
+
+<h3>Data Flow (Review Queue Example)</h3>
+<pre>
+Queue Page (client component)
+  → useEffect: fetch('/api/documents/queue')
+  → 10-second polling interval for live updates
+  → Upload: FormData → POST /api/documents/upload
+  → Click row → navigate to /documents/[id]
+  → Document page: fetch('/api/documents/:id')
+  → Approve: POST /api/documents/:id/approve { corrections }
+  → Flag: POST /api/documents/:id/flag { reason }
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="storage">Object Storage (MinIO / S3)</h2>
+<p><strong>No AWS account needed.</strong> MinIO runs locally via Docker Compose and provides a fully S3-compatible API.</p>
+
+<div class="grid-2">
+  <div class="card">
+    <h4>Local Development</h4>
+    <pre>S3_ENDPOINT=http://localhost:9000
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
+S3_BUCKET=portscope-documents</pre>
+    <p>MinIO console at <code>http://localhost:9001</code></p>
+  </div>
+  <div class="card">
+    <h4>Production</h4>
+    <pre>S3_ENDPOINT=https://s3.amazonaws.com
+S3_ACCESS_KEY=AKIA...
+S3_SECRET_KEY=...
+S3_BUCKET=portscope-prod-docs</pre>
+    <p>Or any S3-compatible: Cloudflare R2, DigitalOcean Spaces, etc.</p>
+  </div>
+</div>
+
+<h3>PDF Processing Pipeline</h3>
+<pre>
+_get_document_text(s3_key):
+  1. Try S3/MinIO download (boto3)
+  2. Parse PDF → text (pdfplumber)
+  3. Fallback: local file at /tmp/documents/&lt;s3_key&gt;
+  4. Fallback: placeholder text for testing
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="database">Database Schema (Prisma)</h2>
+<pre>
+FamilyOffice ──┬── User (STAFF / CLIENT / ADMIN)
+               ├── Entity (TRUST / LLC / SPV / INDIVIDUAL / FOUNDATION)
+               │     └── Holding ──── Fund
+               │           └── CapitalEvent (CALL / DISTRIBUTION)
+               ├── Document (extracted_fields JSON, confidence, status)
+               │     └── DocumentChunk (pgvector for RAG)
+               └── Report (DRAFT → APPROVED → DELIVERED)
+</pre>
+
+<h3>Document Status Flow</h3>
+<pre>
+PROCESSING ──▶ REVIEW ──▶ APPROVED
+                │              │
+                └──▶ REJECTED  └──▶ (persist capital events)
+                │
+  (if all fields ≥ 95%) ──▶ AUTO_APPROVED
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="workflows">Temporal Workflows</h2>
+<p>The <code>ingestDocumentWorkflow</code> orchestrates the full document pipeline:</p>
+<pre>
+async function ingestDocumentWorkflow(input):
+  1. classifyDocument(s3Key)        # Activity: call extractor /classify
+  2. extractDocument(s3Key, type)   # Activity: call extractor /extract
+  3. storeExtraction(docId, fields) # Activity: update DB
+  4. if overallConfidence ≥ 0.95:
+       → AUTO_APPROVED
+  5. else:
+       → notifyReview(docId)        # Activity: email/notify
+       → await approvalSignal       # Blocks until human approves
+  6. if corrections:
+       → storeCorrections(docId)    # Activity: save for training
+  7. persistCapitalEvents(docId)    # Activity: create Holding/Event records
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="auth">Authentication</h2>
+
+<h3>Staff</h3>
+<ul>
+  <li>JWT-based authentication via <code>Authorization: Bearer &lt;token&gt;</code></li>
+  <li>Dev mode: <code>Bearer dev-token</code> bypasses JWT validation and maps to seeded staff user</li>
+  <li>Next.js middleware allows access to review routes in development</li>
+</ul>
+
+<h3>Client</h3>
+<ul>
+  <li>Magic link authentication: <code>/portal?token=&lt;magic-link-token&gt;</code></li>
+  <li>Middleware sets <code>ps-portal-session</code> cookie on first visit with token</li>
+  <li>Dev mode: portal is accessible without token</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="startup">How to Start</h2>
+
+<h3>Option 1: Web UI Only (No Backend)</h3>
+<pre>
+cd portscope-dev
+pnpm install
+pnpm --filter @portscope/web dev
+# Open http://localhost:3000/queue
+</pre>
+
+<h3>Option 2: Full Stack with Ollama (Free, Local AI)</h3>
+<pre>
+# Prerequisites: Docker, Node 20+, pnpm 9+, Python 3.11+, Ollama
+
+# 1. Infrastructure
+docker compose up -d
+
+# 2. Database
+pnpm install
+cd packages/db && npx prisma generate && npx prisma db push && cd ../..
+
+# 2b. Seed demo data (one-time)
+curl -X POST http://localhost:3001/api/seed
+
+# 3. Extractor (in a new terminal)
+cd apps/extractor
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+ollama pull llama3.1:8b
+LLM_PROVIDER=ollama uvicorn src.api.main:app --port 8001 --reload
+
+# 4. Web + API (in a new terminal)
+pnpm dev
+
+# 5. Open browser
+# Staff: http://localhost:3000/queue
+# Portal: http://localhost:3000/portal
+# Extractor: http://localhost:8001/docs (Swagger UI)
+# Temporal: http://localhost:8080
+# MinIO: http://localhost:9001
+</pre>
+
+<h3>Option 3: OpenRouter (No Local GPU Needed)</h3>
+<pre>
+# In .env:
+LLM_PROVIDER=openrouter
+LLM_API_KEY=sk-or-v1-your-key
+LLM_MODEL=anthropic/claude-3.5-sonnet
+# Then follow Option 2 steps (skip ollama pull)
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2 id="status">Implementation Status</h2>
+
+<table>
+  <tr><th>Component</th><th>Status</th><th>Details</th></tr>
+  <tr><td>Monorepo scaffold</td><td class="status-done">✓ Done</td><td>pnpm workspaces, Turborepo, tsconfigs</td></tr>
+  <tr><td>Docker Compose</td><td class="status-done">✓ Done</td><td>PostgreSQL, Temporal, Redis, MinIO</td></tr>
+  <tr><td>Prisma schema</td><td class="status-done">✓ Done</td><td>262 lines, 12 models, all relations</td></tr>
+  <tr><td>LLM provider system</td><td class="status-done">✓ Done</td><td>7 providers: Ollama, OpenRouter, HF, Anthropic, OpenAI, vLLM, custom</td></tr>
+  <tr><td>Extractor API</td><td class="status-done">✓ Done</td><td>classify, extract, upload, process endpoints</td></tr>
+  <tr><td>S3/MinIO integration</td><td class="status-done">✓ Done</td><td>Upload, download, presigned URLs</td></tr>
+  <tr><td>PDF text extraction</td><td class="status-done">✓ Done</td><td>pdfplumber with fallback</td></tr>
+  <tr><td>Confidence scoring</td><td class="status-done">✓ Done</td><td>4-tier system with heuristic validators</td></tr>
+  <tr><td>NestJS API</td><td class="status-done">✓ Done</td><td>Documents, entities, portfolio, reporting modules</td></tr>
+  <tr><td>File upload → processing</td><td class="status-done">✓ Done</td><td>Upload → S3 → background classify/extract → DB update</td></tr>
+  <tr><td>Dev seed data</td><td class="status-done">✓ Done</td><td>Family office, users, entities, funds, holdings, documents</td></tr>
+  <tr><td>Review queue UI</td><td class="status-done">✓ Wired</td><td>Live API fetch, upload button, polling, loading/error states</td></tr>
+  <tr><td>Document review UI</td><td class="status-done">✓ Wired</td><td>Reads params.id, fetches from API, approve/flag wired</td></tr>
+  <tr><td>Client portal UI</td><td class="status-done">✓ Wired</td><td>Fetches from reporting API, formats real data</td></tr>
+  <tr><td>PDF viewer</td><td class="status-done">✓ Done</td><td>iframe with presigned MinIO URL; placeholder fallback</td></tr>
+  <tr><td>Temporal workflow</td><td class="status-wip">◐ Scaffold</td><td>Workflow + activities defined; not yet triggered from API</td></tr>
+  <tr><td>Email notifications</td><td class="status-next">○ Pending</td><td>notifyReview activity is a stub</td></tr>
+  <tr><td>Real JWT auth</td><td class="status-next">○ Pending</td><td>Dev bypass in place; JWT signing/verification not implemented</td></tr>
+  <tr><td>Capital event persistence</td><td class="status-next">○ Pending</td><td>Activity defined, DB writes not implemented</td></tr>
+  <tr><td>Report generation</td><td class="status-next">○ Pending</td><td>Manual report creation via DB; auto-generation not built</td></tr>
+</table>
+
+<hr />
+
+<h2>Tech Stack Summary</h2>
+<div class="grid-2">
+  <div class="card">
+    <h4>TypeScript</h4>
+    <ul>
+      <li>NestJS 10 (API)</li>
+      <li>Next.js 15 + React 19 (Frontend)</li>
+      <li>Prisma 6 (ORM)</li>
+      <li>Temporal SDK (Workflows)</li>
+      <li>Zod (Validation)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Python</h4>
+    <ul>
+      <li>FastAPI (Extractor)</li>
+      <li>Pydantic v2 (Schemas)</li>
+      <li>pdfplumber (PDF parsing)</li>
+      <li>boto3 (S3/MinIO)</li>
+      <li>httpx (LLM HTTP calls)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Infrastructure</h4>
+    <ul>
+      <li>Docker Compose</li>
+      <li>PostgreSQL 16 + pgvector</li>
+      <li>Redis 7</li>
+      <li>Temporal 1.25</li>
+      <li>MinIO (S3-compatible)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>UI</h4>
+    <ul>
+      <li>Tailwind CSS v4</li>
+      <li>shadcn/ui primitives</li>
+      <li>DM Sans / Cormorant Garamond / JetBrains Mono</li>
+      <li>Dark theme with gold accent</li>
+    </ul>
+  </div>
+</div>
+
+<hr />
+<p style="text-align: center; color: var(--muted); font-size: 0.8em; font-family: var(--font-mono);">
+  ◆ Portscope · The family office autopilot · April 2026
+</p>
+
+</div>
+</body>
+</html>

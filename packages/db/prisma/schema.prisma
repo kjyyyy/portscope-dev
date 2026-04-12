@@ -1,0 +1,455 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── MULTI-TENANT ROOT ─────────────────────────────────────────────────────
+
+model FamilyOffice {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  entities           Entity[]
+  documents          Document[]
+  users              User[]
+  reports            Report[]
+  integrations       Integration[]
+  auditLogs          AuditLog[]
+  exposureThresholds ExposureThreshold[]
+  reconciliations    ReconciliationPeriod[]
+  taxPackages        TaxPackage[]
+
+  @@map("family_offices")
+}
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+
+model User {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  name           String?
+  role           UserRole     @default(STAFF)
+  familyOfficeId String       @map("family_office_id")
+  familyOffice   FamilyOffice @relation(fields: [familyOfficeId], references: [id])
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  magicLinks     MagicLink[]
+  reviewedDocs   Document[]   @relation("reviewer")
+
+  @@index([familyOfficeId])
+  @@map("users")
+}
+
+enum UserRole {
+  STAFF
+  CLIENT
+  ADMIN
+}
+
+model MagicLink {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([token])
+  @@map("magic_links")
+}
+
+// ─── ENTITY TREE ─────────────────────────────────────────────────────────────
+
+model Entity {
+  id             String       @id @default(cuid())
+  name           String
+  type           EntityType
+  familyOfficeId String       @map("family_office_id")
+  familyOffice   FamilyOffice @relation(fields: [familyOfficeId], references: [id])
+  parentId       String?      @map("parent_id")
+  parent         Entity?      @relation("EntityTree", fields: [parentId], references: [id])
+  children       Entity[]     @relation("EntityTree")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  holdings       Holding[]
+  documents      Document[]   @relation("entityDocuments")
+  taxPackages    TaxPackage[]
+
+  @@index([familyOfficeId])
+  @@index([parentId])
+  @@map("entities")
+}
+
+enum EntityType {
+  TRUST
+  LLC
+  SPV
+  INDIVIDUAL
+  FOUNDATION
+}
+
+// ─── FUNDS & HOLDINGS ────────────────────────────────────────────────────────
+
+model Fund {
+  id        String   @id @default(cuid())
+  name      String
+  manager   String
+  strategy  String?
+  vintage   Int?
+  geography String?
+  currency  String   @default("USD")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  holdings  Holding[]
+  documents Document[] @relation("fundDocuments")
+
+  @@map("funds")
+}
+
+model Holding {
+  id                String   @id @default(cuid())
+  entityId          String   @map("entity_id")
+  entity            Entity   @relation(fields: [entityId], references: [id])
+  fundId            String   @map("fund_id")
+  fund              Fund     @relation(fields: [fundId], references: [id])
+  commitment        Decimal? @db.Decimal(18, 2)
+  calledAmount      Decimal? @map("called_amount") @db.Decimal(18, 2)
+  distributedAmount Decimal? @map("distributed_amount") @db.Decimal(18, 2)
+  currentNav        Decimal? @map("current_nav") @db.Decimal(18, 2)
+  irr               Decimal? @db.Decimal(8, 4)
+  tvpi              Decimal? @db.Decimal(8, 4)
+  dpi               Decimal? @db.Decimal(8, 4)
+  asOfDate          DateTime? @map("as_of_date")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  capitalEvents     CapitalEvent[]
+
+  @@unique([entityId, fundId])
+  @@index([entityId])
+  @@index([fundId])
+  @@map("holdings")
+}
+
+// ─── CAPITAL EVENTS ──────────────────────────────────────────────────────────
+
+model CapitalEvent {
+  id         String        @id @default(cuid())
+  type       EventType
+  amount     Decimal       @db.Decimal(18, 2)
+  currency   String        @default("USD")
+  eventDate  DateTime      @map("event_date")
+  dueDate    DateTime?     @map("due_date")
+  holdingId  String        @map("holding_id")
+  holding    Holding       @relation(fields: [holdingId], references: [id])
+  documentId String?       @map("document_id")
+  document   Document?     @relation(fields: [documentId], references: [id])
+  status     EventStatus   @default(PENDING)
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  wireInstruction WireInstruction?
+
+  @@index([holdingId])
+  @@index([documentId])
+  @@index([dueDate])
+  @@map("capital_events")
+}
+
+enum EventType {
+  CALL
+  DISTRIBUTION
+}
+
+enum EventStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+// ─── DOCUMENTS ───────────────────────────────────────────────────────────────
+
+model Document {
+  id               String         @id @default(cuid())
+  fileName         String         @map("file_name")
+  s3Key            String         @map("s3_key")
+  type             String         @default("UNKNOWN")
+  status           DocumentStatus @default(PROCESSING)
+  familyOfficeId   String         @map("family_office_id")
+  familyOffice     FamilyOffice   @relation(fields: [familyOfficeId], references: [id])
+  entityId         String?        @map("entity_id")
+  entity           Entity?        @relation("entityDocuments", fields: [entityId], references: [id])
+  fundId           String?        @map("fund_id")
+  fund             Fund?          @relation("fundDocuments", fields: [fundId], references: [id])
+  extractedFields  Json?          @map("extracted_fields")
+  corrections      Json?
+  overallConfidence Float?        @map("overall_confidence")
+  flaggedFieldCount Int           @default(0) @map("flagged_field_count")
+  amount           Decimal?       @db.Decimal(18, 2)
+  dueDate          DateTime?      @map("due_date")
+  workflowId       String?        @map("workflow_id")
+  reviewedBy       String?        @map("reviewed_by")
+  reviewedAt       DateTime?      @map("reviewed_at")
+  reviewer         User?          @relation("reviewer", fields: [reviewedBy], references: [id])
+  processedAt      DateTime?      @map("processed_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  capitalEvents    CapitalEvent[]
+  chunks           DocumentChunk[]
+
+  @@index([familyOfficeId])
+  @@index([status])
+  @@index([type])
+  @@index([familyOfficeId, status])
+  @@map("documents")
+}
+
+enum DocumentStatus {
+  PROCESSING
+  REVIEW
+  AUTO_APPROVED
+  APPROVED
+  REJECTED
+  ERROR
+}
+
+// ─── DOCUMENT CHUNKS (pgvector for RAG) ──────────────────────────────────────
+
+model DocumentChunk {
+  id         String   @id @default(cuid())
+  documentId String   @map("document_id")
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  content    String
+  pageNumber Int?     @map("page_number")
+  chunkIndex Int      @map("chunk_index")
+  // pgvector embedding stored via raw SQL extension
+  // embedding  Unsupported("vector(1536)")?
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([documentId])
+  @@map("document_chunks")
+}
+
+// ─── REPORTS ─────────────────────────────────────────────────────────────────
+
+model Report {
+  id             String       @id @default(cuid())
+  familyOfficeId String       @map("family_office_id")
+  familyOffice   FamilyOffice @relation(fields: [familyOfficeId], references: [id])
+  title          String
+  quarterLabel   String       @map("quarter_label")
+  s3Key          String?      @map("s3_key")
+  status         ReportStatus @default(DRAFT)
+  generatedAt    DateTime?    @map("generated_at")
+  approvedAt     DateTime?    @map("approved_at")
+  deliveredAt    DateTime?    @map("delivered_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@index([familyOfficeId])
+  @@map("reports")
+}
+
+enum ReportStatus {
+  DRAFT
+  APPROVED
+  DELIVERED
+}
+
+// ─── INTEGRATIONS (per-tenant external connections) ──────────────────────────
+
+model Integration {
+  id             String            @id @default(cuid())
+  familyOfficeId String            @map("family_office_id")
+  familyOffice   FamilyOffice      @relation(fields: [familyOfficeId], references: [id])
+  provider       IntegrationProvider
+  name           String
+  config         Json
+  status         IntegrationStatus @default(ACTIVE)
+  lastSyncAt     DateTime?         @map("last_sync_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  @@unique([familyOfficeId, provider])
+  @@index([familyOfficeId])
+  @@map("integrations")
+}
+
+enum IntegrationProvider {
+  S3
+  SLACK
+  SFTP
+  EMAIL
+  GOOGLE_DRIVE
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+}
+
+// ─── AUDIT TRAIL ────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  familyOfficeId String       @map("family_office_id")
+  familyOffice   FamilyOffice @relation(fields: [familyOfficeId], references: [id])
+  action         AuditAction
+  entityType     String       @map("entity_type")
+  entityId       String       @map("entity_id")
+  actorId        String?      @map("actor_id")
+  actorType      ActorType    @default(USER)
+  before         Json?
+  after          Json?
+  metadata       Json?
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([familyOfficeId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum AuditAction {
+  DOCUMENT_UPLOADED
+  DOCUMENT_APPROVED
+  DOCUMENT_REJECTED
+  DOCUMENT_RE_EXTRACTED
+  DOCUMENT_FLAGGED
+  FIELD_CORRECTED
+  CAPITAL_EVENT_CREATED
+  WIRE_MARKED
+  WIRE_CONFIRMED
+  REPORT_GENERATED
+  REPORT_APPROVED
+  REPORT_DELIVERED
+  RECONCILIATION_COMPLETED
+  THRESHOLD_UPDATED
+  INTEGRATION_CONNECTED
+  INTEGRATION_DISCONNECTED
+  TAX_PACKAGE_RECEIVED
+}
+
+enum ActorType {
+  USER
+  SYSTEM
+}
+
+// ─── WIRE INSTRUCTIONS ──────────────────────────────────────────────────────
+
+model WireInstruction {
+  id              String       @id @default(cuid())
+  capitalEventId  String       @unique @map("capital_event_id")
+  capitalEvent    CapitalEvent @relation(fields: [capitalEventId], references: [id])
+  abaRouting      String?      @map("aba_routing")
+  swiftBic        String?      @map("swift_bic")
+  bankName        String?      @map("bank_name")
+  accountName     String?      @map("account_name")
+  accountNumber   String?      @map("account_number")
+  currency        String       @default("USD")
+  reference       String?
+  wireStatus      WireStatus   @default(PENDING)
+  wiredAt         DateTime?    @map("wired_at")
+  confirmedAt     DateTime?    @map("confirmed_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  @@index([wireStatus])
+  @@map("wire_instructions")
+}
+
+enum WireStatus {
+  PENDING
+  WIRED
+  CONFIRMED
+}
+
+// ─── EXPOSURE THRESHOLDS ────────────────────────────────────────────────────
+
+model ExposureThreshold {
+  id             String           @id @default(cuid())
+  familyOfficeId String           @map("family_office_id")
+  familyOffice   FamilyOffice     @relation(fields: [familyOfficeId], references: [id])
+  dimension      ExposureDimension
+  maxPercent     Float            @map("max_percent")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  @@unique([familyOfficeId, dimension])
+  @@map("exposure_thresholds")
+}
+
+enum ExposureDimension {
+  STRATEGY
+  GEOGRAPHY
+  MANAGER
+  VINTAGE
+}
+
+// ─── RECONCILIATION ─────────────────────────────────────────────────────────
+
+model ReconciliationPeriod {
+  id             String              @id @default(cuid())
+  familyOfficeId String              @map("family_office_id")
+  familyOffice   FamilyOffice        @relation(fields: [familyOfficeId], references: [id])
+  year           Int
+  month          Int
+  status         ReconciliationStatus @default(PENDING)
+  custodianFile  String?              @map("custodian_file")
+  diffs          Json?
+  reconciledAt   DateTime?            @map("reconciled_at")
+  reconciledBy   String?              @map("reconciled_by")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+
+  @@unique([familyOfficeId, year, month])
+  @@index([familyOfficeId])
+  @@map("reconciliation_periods")
+}
+
+enum ReconciliationStatus {
+  PENDING
+  RECONCILED
+  EXCEPTION
+}
+
+// ─── TAX PACKAGES ───────────────────────────────────────────────────────────
+
+model TaxPackage {
+  id             String          @id @default(cuid())
+  familyOfficeId String          @map("family_office_id")
+  familyOffice   FamilyOffice    @relation(fields: [familyOfficeId], references: [id])
+  taxYear        Int             @map("tax_year")
+  entityId       String          @map("entity_id")
+  entity         Entity          @relation(fields: [entityId], references: [id])
+  fundId         String?         @map("fund_id")
+  documentId     String?         @map("document_id")
+  status         TaxPackageStatus @default(PENDING)
+  expectedDate   DateTime?       @map("expected_date")
+  receivedDate   DateTime?       @map("received_date")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  @@unique([familyOfficeId, taxYear, entityId, fundId])
+  @@index([familyOfficeId, taxYear])
+  @@map("tax_packages")
+}
+
+enum TaxPackageStatus {
+  PENDING
+  RECEIVED
+  OVERDUE
+}

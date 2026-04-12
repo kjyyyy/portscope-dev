@@ -1,0 +1,11 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "apps/extractor/Dockerfile"
+watchPatterns = ["apps/extractor/**"]
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+numReplicas = 1
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

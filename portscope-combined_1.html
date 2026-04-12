@@ -1,0 +1,2187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portscope — Master Strategy & Implementation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0d10;--bg2:#10131a;--bg3:#161b24;--surf:#1c2133;--surf2:#222840;
+  --b:#252d40;--b2:#2e3850;--text:#bfc8d8;--text2:#8390a8;--text3:#4f5d78;
+  --white:#e8edf5;
+  --gold:#c49a38;--gold2:#e0b855;--gdim:rgba(196,154,56,.11);--gpale:rgba(224,184,85,.08);
+  --teal:#28a084;--teal2:#35c4a5;--tdim:rgba(40,160,132,.11);
+  --blue:#4d8ef0;--bdim:rgba(77,142,240,.11);
+  --red:#d45c5c;--rdim:rgba(212,92,92,.1);
+  --purple:#9a7ef5;--pdim:rgba(154,126,245,.11);
+  --green:#56b86e;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'DM Sans',sans-serif;
+  --serif:'Cormorant Garamond',serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.7;-webkit-font-smoothing:antialiased}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:200;background:rgba(11,13,16,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--b);height:48px;display:flex;align-items:center;padding:0 2rem;gap:0}
+.nav-logo{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--gold2);padding-right:1.75rem;border-right:1px solid var(--b);margin-right:1.5rem;white-space:nowrap}
+.nav-scroll{display:flex;overflow-x:auto;gap:0;scrollbar-width:none}
+.nav-scroll::-webkit-scrollbar{display:none}
+.nav-a{font-size:11px;font-family:var(--mono);color:var(--text3);padding:.35rem .85rem;text-decoration:none;white-space:nowrap;transition:color .15s,background .15s;border-radius:4px;border-bottom:2px solid transparent}
+.nav-a:hover{color:var(--text);background:var(--surf)}
+.nav-a.active{color:var(--gold2);border-bottom-color:var(--gold)}
+
+/* HERO */
+.hero{background:var(--bg2);border-bottom:1px solid var(--b);padding:5.5rem 3rem 4.5rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 80% 40%,rgba(196,154,56,.06),transparent)}
+.hero-eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem}
+.hero h1{font-family:var(--serif);font-size:clamp(2.6rem,5vw,4.2rem);font-weight:300;line-height:1.12;color:var(--white);max-width:760px;margin-bottom:1.25rem}
+.hero h1 em{font-style:italic;color:var(--gold2)}
+.hero-sub{font-size:14px;color:var(--text2);max-width:560px;line-height:1.9;margin-bottom:3rem}
+.hero-stats{display:flex;gap:3rem;flex-wrap:wrap}
+.hs-n{font-family:var(--serif);font-size:2.5rem;font-weight:300;color:var(--gold2);line-height:1}
+.hs-l{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-top:.25rem}
+
+/* LAYOUT */
+.sband{padding:.6rem 3rem;background:var(--surf);border-top:1px solid var(--b);border-bottom:1px solid var(--b);font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text3)}
+.sband b{color:var(--gold);margin-right:.6rem}
+.sec{max-width:1060px;margin:0 auto;padding:4.5rem 3rem;border-bottom:1px solid var(--b)}
+.ey{font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem}
+.st{font-family:var(--serif);font-size:clamp(1.7rem,2.8vw,2.4rem);font-weight:300;color:var(--white);line-height:1.2;margin-bottom:.75rem}
+.st em{font-style:italic;color:var(--gold2)}
+.si{font-size:13.5px;color:var(--text2);max-width:660px;line-height:1.9;margin-bottom:2.5rem}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+@media(max-width:740px){.g2,.g3{grid-template-columns:1fr}}
+
+/* CARDS */
+.card{background:var(--bg3);border:1px solid var(--b);border-radius:6px;padding:1.25rem}
+.card:hover{border-color:var(--b2)}
+.ctag{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.55rem}
+.tg{color:var(--gold)}.tt{color:var(--teal)}.tb{color:var(--blue)}.tr{color:var(--red)}
+.card h4{font-size:13.5px;font-weight:600;color:var(--white);margin-bottom:.35rem}
+.card p,.card li{font-size:12.5px;color:var(--text2);line-height:1.7}
+.card ul{padding-left:1rem;margin-top:.4rem}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:1.5rem 0}
+.tbl th{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);padding:.55rem 1rem;border-bottom:2px solid var(--b2);text-align:left}
+.tbl td{padding:.65rem 1rem;border-bottom:1px solid var(--b);color:var(--text2);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--surf)}
+.em{color:var(--white);font-weight:500}
+.good{color:var(--teal)}.bad{color:var(--red)}.warn{color:var(--gold)}
+
+/* CALLOUT */
+.co{border-left:3px solid;border-radius:0 6px 6px 0;padding:.9rem 1.25rem;margin:1.25rem 0;font-size:13px;line-height:1.8}
+.co-g{background:var(--gdim);border-color:var(--gold);color:var(--gold2)}
+.co-t{background:var(--tdim);border-color:var(--teal);color:var(--teal2)}
+.co-b{background:var(--bdim);border-color:var(--blue);color:var(--blue)}
+.co-r{background:var(--rdim);border-color:var(--red);color:var(--red)}
+.co .cl{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;display:block;margin-bottom:.25rem}
+.co strong{font-weight:600}
+
+/* PULL QUOTE */
+.pq{border-left:3px solid var(--gold);background:var(--surf);padding:1.5rem 2rem;margin:2rem 0;border-radius:0 6px 6px 0}
+.pq p{font-family:var(--serif);font-size:1.2rem;font-style:italic;color:var(--white);line-height:1.5}
+.pq cite{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:var(--text3);display:block;margin-top:.55rem;text-transform:uppercase;font-style:normal}
+
+/* ARCH */
+.arch{background:var(--bg3);border:1px solid var(--b);border-radius:6px;padding:1.75rem 2rem}
+.arow{display:flex;gap:.6rem;align-items:center;margin-bottom:.55rem;flex-wrap:wrap}
+.albl{width:120px;flex-shrink:0;font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);text-align:right;padding-right:.75rem;border-right:1px solid var(--b)}
+.anodes{display:flex;gap:.35rem;flex-wrap:wrap;align-items:center}
+.an{border-radius:4px;padding:.3rem .7rem;font-family:var(--mono);font-size:10px;white-space:nowrap;border:1px solid}
+.ag{background:var(--gdim);color:var(--gold);border-color:rgba(196,154,56,.25)}
+.at{background:var(--tdim);color:var(--teal);border-color:rgba(40,160,132,.25)}
+.ab{background:var(--bdim);color:var(--blue);border-color:rgba(77,142,240,.25)}
+.ap{background:var(--pdim);color:var(--purple);border-color:rgba(154,126,245,.25)}
+.agr{background:var(--surf);color:var(--text2);border-color:var(--b2)}
+.aarr{padding:.15rem 0 .15rem 120px;color:var(--text3);font-size:12px;padding-left:calc(120px + .75rem + .6rem)}
+
+/* PERSONAS */
+.pc{border-radius:7px;padding:1.5rem;border:1px solid}
+.pc-g{background:rgba(196,154,56,.05);border-color:rgba(196,154,56,.18)}
+.pc-t{background:rgba(40,160,132,.05);border-color:rgba(40,160,132,.18)}
+.pc-n{background:rgba(77,142,240,.05);border-color:rgba(77,142,240,.18)}
+.pc-emoji{font-size:1.75rem;margin-bottom:.55rem;display:block}
+.pc-name{font-family:var(--serif);font-size:1.1rem;font-weight:400;color:var(--white)}
+.pc-role{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;margin:.15rem 0 .7rem}
+.pc-g .pc-role{color:var(--gold)}.pc-t .pc-role{color:var(--teal)}.pc-n .pc-role{color:var(--blue)}
+.pc-bio{font-size:12.5px;color:var(--text2);line-height:1.75;margin-bottom:.8rem}
+.pcs{display:flex;justify-content:space-between;padding:.28rem 0;border-bottom:1px solid var(--b)}
+.pcs:last-child{border:none}
+.pcsl{font-size:11.5px;color:var(--text3)}.pcsv{font-family:var(--mono);font-size:10.5px;color:var(--text)}
+
+/* JOURNEY MAP */
+.jmap{background:var(--bg3);border:1px solid var(--b);border-radius:6px;overflow:hidden;margin:1.5rem 0}
+.jhead{padding:1.1rem 1.5rem;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:.8rem}
+.jav{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.jav-g{background:rgba(196,154,56,.14)}.jav-t{background:rgba(40,160,132,.14)}.jav-n{background:rgba(77,142,240,.14)}
+.jht h3{font-family:var(--serif);font-size:.95rem;font-weight:400;color:var(--white)}
+.jht p{font-size:11.5px;color:var(--text2);margin-top:.1rem}
+.steps{display:flex;padding:1.25rem 1.5rem;overflow-x:auto;position:relative}
+.steps::before{content:'';position:absolute;top:calc(1.25rem + 14px);left:1.5rem;right:1.5rem;height:1px;background:var(--b2)}
+.step{flex:1;min-width:105px;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 .35rem;position:relative;z-index:1}
+.sdot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;margin-bottom:.55rem;border:2px solid;flex-shrink:0}
+.sd-g{background:rgba(196,154,56,.12);color:var(--gold);border-color:var(--gold)}
+.sd-t{background:rgba(40,160,132,.12);color:var(--teal);border-color:var(--teal)}
+.sd-a{background:var(--surf2);color:var(--text2);border-color:var(--b2)}
+.slbl{font-size:10.5px;font-weight:600;color:var(--white);line-height:1.3;margin-bottom:.2rem}
+.ssub{font-size:9.5px;color:var(--text2);line-height:1.4}
+.stm{font-family:var(--mono);font-size:8.5px;color:var(--gold);margin-top:.3rem}
+.ebar{border-top:1px solid var(--b);background:var(--bg2);padding:1rem 1.5rem 1.2rem}
+.ebar-lbl{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.6rem}
+.ecurve{display:flex;align-items:flex-end;gap:4px;height:40px}
+.eb{flex:1;border-radius:3px 3px 0 0}
+.eb-p{background:rgba(40,160,132,.18);border-top:2px solid var(--teal)}
+.eb-n{background:rgba(212,92,92,.14);border-top:2px solid var(--red)}
+.eb-u{background:var(--surf);border-top:2px solid var(--b2)}
+.eb-h{background:rgba(86,184,110,.17);border-top:2px solid var(--green)}
+
+/* WIREFRAMES */
+.wf{background:#f5f7fa;border:1px solid #cdd5e0;border-radius:8px;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.18)}
+.wfc{background:white;border-bottom:1px solid #e0e6ef;padding:.4rem .7rem;display:flex;align-items:center;gap:.3rem}
+.wfd{width:8px;height:8px;border-radius:50%}.wfr{background:#ff5f57}.wfy{background:#febc2e}.wfg{background:#28c840}
+.wfurl{flex:1;background:#f0f2f5;border-radius:3px;padding:2px 8px;font-family:var(--mono);font-size:8.5px;color:#7a8898;margin-left:.4rem}
+.wtop{background:#161d2d;padding:.5rem .9rem;display:flex;align-items:center;justify-content:space-between}
+.wlogo{font-family:var(--mono);font-size:9.5px;color:var(--gold2);letter-spacing:.1em}
+.wusr{font-size:9.5px;color:rgba(232,237,245,.4)}
+/* queue wireframe */
+.wq-wrap{display:flex}
+.wq-nav{width:158px;flex-shrink:0;background:#f8f9fb;border-right:1px solid #e0e6ef;padding:.55rem .4rem;min-height:230px}
+.wq-ni{padding:.32rem .55rem;border-radius:4px;font-size:10.5px;color:#7a8898;display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.wq-ni.a{background:white;color:#1a2030;font-weight:600;border:1px solid #e0e6ef}
+.wq-nb{background:var(--gold);color:white;font-family:var(--mono);font-size:7.5px;padding:1px 5px;border-radius:8px}
+.wq-main{flex:1;padding:.6rem}
+.wq-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:.55rem;font-size:11.5px;font-weight:600;color:#1a2030}
+.wq-meta{font-family:var(--mono);font-size:8.5px;color:#7a8898}
+.qi{display:flex;align-items:center;gap:.5rem;padding:.5rem .65rem;border-radius:5px;margin-bottom:3px;border:1px solid transparent}
+.qi:hover,.qi.sel{background:white;border-color:#e0e6ef}
+.qi.sel{border-color:rgba(196,154,56,.4)}
+.qico{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.qc{background:#fff3cd;color:#856404}.qd{background:#d4edda;color:#155724}.qn{background:#d1ecf1;color:#0c5460}
+.qi-info{flex:1;min-width:0}
+.qi-n{font-size:10.5px;font-weight:600;color:#1a2030;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qi-m{font-size:9px;color:#7a8898}
+.qibadge{font-family:var(--mono);font-size:8px;padding:2px 5px;border-radius:3px;flex-shrink:0}
+.qb-r{background:#fff3cd;color:#856404}.qb-a{background:#d4edda;color:#155724}.qb-h{background:#f8d7da;color:#721c24}
+/* review wireframe */
+.rv-layout{display:flex;height:260px}
+.rv-pdf{width:46%;background:#eaecf0;border-right:1px solid #e0e6ef;padding:.6rem;overflow:hidden}
+.rv-fields{flex:1;background:white;padding:.6rem;overflow-y:auto}
+.pdf-mock{background:white;border:1px solid #ced4da;border-radius:3px;height:100%;padding:.6rem;font-size:7px;color:#7a8898;line-height:1.6;overflow:hidden}
+.pdf-mock h4{font-size:8.5px;font-weight:700;color:#1a2030;margin-bottom:.35rem}
+.pdf-hl{background:rgba(255,230,80,.5);border-bottom:1px solid #ffc107}
+.fr{margin-bottom:.4rem}
+.fr-lbl{font-family:var(--mono);font-size:7.5px;text-transform:uppercase;letter-spacing:.07em;color:#7a8898;margin-bottom:2px;display:flex;justify-content:space-between}
+.fr-val{background:#f5f7fa;border:1px solid #e0e6ef;border-radius:3px;padding:3px 6px;font-family:var(--mono);font-size:9.5px;color:#1a2030}
+.fr-val.fok{border-color:#28a745;background:#eefaf1}
+.fr-val.fwarn{border-color:#ffc107;background:#fffaed}
+.conf{font-size:7.5px;padding:1px 4px;border-radius:2px}
+.cg{background:#d4edda;color:#155724}.cm{background:#fff3cd;color:#856404}.cr{background:#f8d7da;color:#721c24}
+.rv-footer{padding:.4rem .6rem;border-top:1px solid #e0e6ef;display:flex;justify-content:flex-end;gap:.35rem;background:#f8f9fb}
+.btn{font-size:9px;padding:3px 9px;border-radius:4px;border:1px solid;cursor:pointer;font-weight:500}
+.btn-ghost{background:white;border-color:#e0e6ef;color:#7a8898}
+.btn-approve{background:#28a745;border-color:#28a745;color:white}
+/* portal wireframe */
+.portal-top{background:#131e38;padding:.7rem .9rem;display:flex;justify-content:space-between;align-items:center}
+.portal-lbl{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.4)}
+.portal-name{font-size:11px;color:white;font-weight:500}
+.portal-body{padding:.9rem;background:#f5f7fa}
+.pnw{background:white;border:1px solid #e0e6ef;border-radius:6px;padding:.8rem .95rem;margin-bottom:.6rem}
+.pnw-lbl{font-family:var(--mono);font-size:7.5px;text-transform:uppercase;letter-spacing:.1em;color:#7a8898;margin-bottom:.2rem}
+.pnw-val{font-family:var(--serif);font-size:1.5rem;font-weight:700;color:#1a2030;line-height:1}
+.pnw-d{font-size:9.5px;color:#28a745;margin-top:.15rem}
+.p4{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-bottom:.6rem}
+.pmini{background:white;border:1px solid #e0e6ef;border-radius:5px;padding:.5rem .65rem}
+.pmini-l{font-size:8px;color:#7a8898}.pmini-v{font-family:var(--mono);font-size:10.5px;font-weight:500;color:#1a2030}
+.rptcard{background:#131e38;border-radius:6px;padding:.65rem .9rem;display:flex;align-items:center;justify-content:space-between}
+.rptcard-n{font-size:11px;color:white;font-weight:600}.rptcard-l{font-size:8.5px;color:rgba(255,255,255,.45)}
+.rptbtn{font-size:8.5px;background:var(--gold2);color:#1a2030;border:none;padding:4px 9px;border-radius:3px;font-weight:700;cursor:pointer}
+.ann{display:flex;gap:.45rem;margin:.3rem 0;font-size:11.5px;color:var(--text2)}
+.ann::before{content:'\21B3';color:var(--gold);font-family:var(--mono);flex-shrink:0;margin-top:1px}
+
+/* FILE TABS */
+.ftabs{background:var(--bg);border:1px solid var(--b);border-radius:6px;overflow:hidden;margin:1.25rem 0}
+.ftab-bar{background:var(--surf);border-bottom:1px solid var(--b);display:flex;overflow-x:auto;scrollbar-width:none}
+.ftab-bar::-webkit-scrollbar{display:none}
+.ftab{font-family:var(--mono);font-size:10px;color:var(--text3);padding:.45rem 1rem;cursor:pointer;white-space:nowrap;border-right:1px solid var(--b);border-bottom:2px solid transparent;transition:all .15s}
+.ftab:hover{color:var(--text2);background:var(--bg3)}
+.ftab.on{color:var(--white);border-bottom-color:var(--gold);background:var(--bg)}
+.ftab-pane{display:none}.ftab-pane.on{display:block}
+
+/* CODE */
+.cbody{padding:1.1rem 1.25rem;font-family:var(--mono);font-size:11.5px;line-height:1.9;color:var(--text);white-space:pre;overflow-x:auto;background:var(--bg)}
+.cbody::-webkit-scrollbar{height:3px}.cbody::-webkit-scrollbar-thumb{background:var(--b2)}
+.cb-top{background:var(--surf);border-bottom:1px solid var(--b);padding:.45rem 1.1rem;display:flex;justify-content:space-between}
+.cb-f{font-family:var(--mono);font-size:10.5px;color:var(--text2)}.cb-l{font-family:var(--mono);font-size:9px;color:var(--text3)}
+.kw{color:#9a7ef5}.fn{color:#5ba4f5}.str{color:#56b86e}.ty{color:#e8a060}.cm{color:#3d4f6a;font-style:italic}.nu{color:#d45c5c}.de{color:#35c4a5}.cd{color:#c49a38}
+
+/* TIERS */
+.tier{background:var(--bg3);border:1px solid var(--b);border-radius:6px;overflow:hidden}
+.tier.feat{border-color:var(--gold)}
+.tier-hd{padding:1.1rem 1.35rem;border-bottom:1px solid var(--b);display:flex;justify-content:space-between;align-items:flex-start}
+.tier.feat .tier-hd{background:var(--gdim)}
+.tier-n{font-family:var(--serif);font-size:1rem;font-weight:400;color:var(--white)}
+.tier-p{font-family:var(--mono);font-size:10px;color:var(--teal);text-align:right}
+.tier-b{padding:1.1rem 1.35rem}.tier-b ul{padding-left:1rem}
+.tier-b li{font-size:12px;color:var(--text2);margin-bottom:.3rem}
+
+/* MATRIX */
+.matrix{background:var(--bg3);border:1px solid var(--b);border-radius:6px;padding:1.5rem;overflow-x:auto}
+.mx{display:grid;grid-template-columns:90px 1fr 1fr;grid-template-rows:auto 1fr 1fr;gap:5px;min-height:280px}
+.mx-cl{font-family:var(--mono);font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;justify-content:flex-end;text-align:right;padding-right:.55rem}
+.mx-ch{font-family:var(--mono);font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);text-align:center;padding-bottom:.3rem}
+.mc{border-radius:5px;padding:.8rem .95rem}
+.mc-star{background:var(--gdim);border:1px solid rgba(196,154,56,.28)}
+.mc-tl{background:var(--tdim);border:1px solid rgba(40,160,132,.25)}
+.mc-bl{background:var(--surf);border:1px solid var(--b2)}
+.mc-br{background:var(--rdim);border:1px solid rgba(212,92,92,.25)}
+.mc-lbl{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.3rem}
+.mc-star .mc-lbl{color:var(--gold)}.mc-tl .mc-lbl{color:var(--teal)}.mc-bl .mc-lbl{color:var(--text3)}.mc-br .mc-lbl{color:var(--red)}
+.chip{display:inline-block;font-family:var(--mono);font-size:9.5px;padding:2px 7px;border-radius:10px;margin:2px}
+.chip-g{background:rgba(196,154,56,.1);color:var(--gold)}.chip-t{background:rgba(40,160,132,.1);color:var(--teal)}.chip-gr{background:var(--surf2);color:var(--text2)}.chip-star{background:var(--bg);color:var(--gold2);border:1px solid rgba(196,154,56,.3)}
+.mc-d{font-size:10px;color:var(--text2);margin-top:.35rem;line-height:1.55}
+
+/* SPRINT */
+.sprint{display:grid;grid-template-columns:80px 1fr;gap:1.25rem;padding:1.75rem 0;border-bottom:1px solid var(--b)}
+.sprint:last-child{border:none}
+.sp-num{text-align:right;padding-top:.2rem}
+.sp-wk{font-family:var(--mono);font-size:8.5px;color:var(--text3);letter-spacing:.09em;display:block}
+.sp-n{font-family:var(--serif);font-size:2rem;color:var(--gold);line-height:1;font-style:italic}
+.sp-c h4{font-size:14px;font-weight:600;color:var(--white);margin-bottom:.3rem}
+.sp-c p{font-size:13px;color:var(--text2);margin-bottom:.6rem;line-height:1.8}
+.task{display:flex;gap:.5rem;align-items:flex-start;font-size:12.5px;color:var(--text2);margin-bottom:.22rem}
+.task::before{content:"\2192";color:var(--gold);font-family:var(--mono);flex-shrink:0;margin-top:1px}
+.task strong{color:var(--white)}
+
+/* OSS */
+.oss{background:var(--bg3);border:1px solid var(--b);border-radius:6px;overflow:hidden;margin-bottom:.55rem;transition:border-color .15s}
+.oss:hover{border-color:var(--b2)}
+.oss-h{padding:.7rem 1rem;border-bottom:1px solid var(--b);display:flex;justify-content:space-between;align-items:center}
+.oss-n{font-family:var(--mono);font-size:12px;color:var(--white);font-weight:500}
+.oss-l{font-family:var(--mono);font-size:9px;color:var(--text3)}
+.oss-b{padding:.8rem 1rem}
+.oss-d{font-size:12.5px;color:var(--text2);line-height:1.7}
+
+/* PROMPT */
+.prompt-box{background:#060810;border:1px solid var(--gold);border-radius:6px;overflow:hidden;margin:1.25rem 0}
+.prompt-hd{background:rgba(196,154,56,.07);border-bottom:1px solid rgba(196,154,56,.2);padding:.65rem 1.2rem;display:flex;justify-content:space-between;align-items:center}
+.prompt-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.copy-btn{font-family:var(--mono);font-size:9.5px;color:var(--gold);background:rgba(196,154,56,.09);border:1px solid rgba(196,154,56,.22);border-radius:3px;padding:3px 10px;cursor:pointer;transition:background .15s}
+.copy-btn:hover{background:rgba(196,154,56,.18)}
+.prompt-body{padding:1.5rem;font-family:var(--mono);font-size:11px;line-height:2;color:var(--text);white-space:pre-wrap;max-height:560px;overflow-y:auto}
+.prompt-body::-webkit-scrollbar{width:4px}.prompt-body::-webkit-scrollbar-thumb{background:var(--b2)}
+
+/* MOMENT CARDS */
+.moments{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin:1.5rem 0}
+@media(max-width:740px){.moments{grid-template-columns:1fr}}
+.moment{border-radius:7px;padding:1.5rem;border:1px solid}
+.mo-g{background:rgba(196,154,56,.05);border-color:rgba(196,154,56,.2)}
+.mo-t{background:rgba(40,160,132,.05);border-color:rgba(40,160,132,.2)}
+.mo-n{background:rgba(77,142,240,.05);border-color:rgba(77,142,240,.18)}
+.mo-num{font-family:var(--serif);font-size:2.4rem;font-style:italic;line-height:1;margin-bottom:.45rem}
+.mo-g .mo-num{color:var(--gold)}.mo-t .mo-num{color:var(--teal)}.mo-n .mo-num{color:var(--blue)}
+.mo-title{font-size:13.5px;font-weight:600;color:var(--white);margin-bottom:.35rem}
+.mo-desc{font-size:12.5px;color:var(--text2);line-height:1.7}
+
+/* ONBOARD */
+.ob-step{display:grid;grid-template-columns:46px 1fr;gap:1.1rem;padding:1.5rem 0;border-bottom:1px solid var(--b)}
+.ob-step:last-child{border:none}
+.ob-n{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.15rem;font-style:italic;flex-shrink:0}
+.ob-g{background:rgba(196,154,56,.1);color:var(--gold);border:1px solid rgba(196,154,56,.25)}
+.ob-t{background:rgba(40,160,132,.1);color:var(--teal);border:1px solid rgba(40,160,132,.25)}
+.ob-n2{background:rgba(77,142,240,.1);color:var(--blue);border:1px solid rgba(77,142,240,.22)}
+.ob-c h4{font-family:var(--serif);font-size:1rem;font-weight:400;color:var(--white);margin-bottom:.3rem}
+.ob-c p{font-size:13px;color:var(--text2);line-height:1.75}
+.ob-detail{margin-top:.55rem;background:var(--surf);border:1px solid var(--b);border-radius:5px;padding:.7rem .95rem;font-size:12.5px;color:var(--text2);line-height:1.7}
+.ob-detail strong{color:var(--white)}
+.ob-dur{font-family:var(--mono);font-size:8.5px;color:var(--gold);letter-spacing:.07em;margin-top:.35rem;display:block}
+
+/* REPH (section subheading) */
+.reph{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:2rem 0 .85rem;display:flex;align-items:center;gap:.55rem}
+
+/* FOOTER */
+.footer{background:var(--bg2);border-top:1px solid var(--b);padding:2rem 3rem;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-align:center;color:var(--text3)}
+.footer strong{color:var(--gold2)}
+</style>
+</head>
+<body>
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">&#x25C6; PORTSCOPE</div>
+  <div class="nav-scroll">
+    <a class="nav-a active" href="#thesis">01 Thesis</a>
+    <a class="nav-a" href="#model">02 Business Model</a>
+    <a class="nav-a" href="#actors">03 Personas</a>
+    <a class="nav-a" href="#journeys">04 User Journeys</a>
+    <a class="nav-a" href="#screens">05 UX Screens</a>
+    <a class="nav-a" href="#features">05b Features</a>
+    <a class="nav-a" href="#onboarding">06 Pilot Onboarding</a>
+    <a class="nav-a" href="#arch">07 Architecture</a>
+    <a class="nav-a" href="#structure">08 Folder Structure</a>
+    <a class="nav-a" href="#frontend">09 Frontend Files</a>
+    <a class="nav-a" href="#oss">10 LLM Providers</a>
+    <a class="nav-a" href="#sprints">11 Sprint Plan</a>
+    <a class="nav-a" href="#howtostart">11b How to Start</a>
+    <a class="nav-a" href="#status">11c Status</a>
+    <a class="nav-a" href="#cursor">12 Cursor Prompt</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">Portscope &middot; Master Strategy &amp; Implementation &middot; April 2026</div>
+  <h1>The family office<br><em>autopilot.</em><br>Not software &mdash; outcomes.</h1>
+  <p class="hero-sub">Portscope replaces the fund administrator for small family offices. Documents arrive by email, a fine-tuned VLM processes them via the LLM extraction layer, Temporal orchestrates the pipeline, and reconciled quarterly reports are delivered automatically. The software is invisible infrastructure. The product is closed books.</p>
+  <div class="hero-stats">
+    <div><div class="hs-n">6&times;</div><div class="hs-l">Services spend per $1 software</div></div>
+    <div><div class="hs-n">57%</div><div class="hs-l">Family offices still on Excel</div></div>
+    <div><div class="hs-n">$80B+</div><div class="hs-l">Outsourced accounting TAM (US)</div></div>
+    <div><div class="hs-n">3</div><div class="hs-l">Screens that matter to any client</div></div>
+  </div>
+</div>
+
+<!-- 01 THESIS -->
+<div class="sband"><b>01</b> The Sequoia Thesis Applied</div>
+<div class="sec" id="thesis">
+  <div class="ey">Sequoia Capital &ldquo;Services: The New Software&rdquo; &middot; March 2026</div>
+  <h2 class="st">Don&rsquo;t sell the <em>tool.</em> Sell closed books.</h2>
+  <p class="si">Julien Bek&rsquo;s thesis: the next trillion-dollar company won&rsquo;t sell software tools &mdash; it will sell the work itself. Every model improvement makes a tool-seller vulnerable and a work-seller more powerful. Here&rsquo;s how that maps to family offices.</p>
+
+  <div class="pq"><p>&ldquo;A company might spend $10K a year for QuickBooks and $120K on an accountant to close the books. The next legendary company will just close the books.&rdquo;</p><cite>&mdash; Julien Bek, Sequoia Capital &middot; March 2026</cite></div>
+
+  <div class="g2" style="margin-bottom:1.75rem">
+    <div class="card"><div class="ctag tr">&#10060; Copilot (the trap)</div><h4>Sell access to the tool</h4><p>Users log in, see a dashboard, and use AI to help them do the work themselves. You charge per seat. Every 6 months a better Claude update makes your interface a feature. You race model providers forever.</p></div>
+    <div class="card" style="border-color:rgba(40,160,132,.3)"><div class="ctag tt">&#10003; Autopilot (the thesis)</div><h4>Deliver the outcome directly</h4><p>Capital calls processed. Books reconciled. Reports delivered. Clients barely touch any interface. You charge for the output &mdash; and every model improvement makes you faster, cheaper, and harder to displace.</p></div>
+  </div>
+
+  <h3 style="font-family:var(--serif);font-weight:400;font-size:1.2rem;color:var(--white);margin-bottom:1rem">Sequoia Opportunity Matrix &mdash; where family office work sits</h3>
+  <div class="matrix">
+    <div class="mx">
+      <div></div>
+      <div class="mx-ch">&#9664; More outsourced today</div>
+      <div class="mx-ch">More insourced &#9654;</div>
+      <div class="mx-cl" style="writing-mode:vertical-lr;transform:rotate(180deg)">INTELLIGENCE-HEAVY &uarr;</div>
+      <div class="mc mc-star">
+        <div class="mc-lbl">&#127919; Portscope wedge &mdash; start here</div>
+        <span class="chip chip-star">Alt doc extraction</span><span class="chip chip-star">Capital call processing</span><span class="chip chip-star">NAV reconciliation</span><span class="chip chip-g">K-1 / K-3 parsing</span><span class="chip chip-g">Quarterly report delivery</span>
+        <div class="mc-d">Already outsourced to fund admins. Existing budget line. Vendor swap, not a new spend.</div>
+      </div>
+      <div class="mc mc-tl">
+        <div class="mc-lbl">&#127942; Expand here &mdash; phase 2</div>
+        <span class="chip chip-t">Portfolio analytics</span><span class="chip chip-t">Exposure monitoring</span><span class="chip chip-t">Anomaly alerts</span>
+        <div class="mc-d">In-house but intelligence-heavy. Build trust first via transparency.</div>
+      </div>
+      <div class="mx-cl" style="writing-mode:vertical-lr;transform:rotate(180deg)">JUDGEMENT-HEAVY &darr;</div>
+      <div class="mc mc-bl">
+        <div class="mc-lbl">Later stage</div>
+        <span class="chip chip-gr">Tax advisory</span><span class="chip chip-gr">Compliance filings</span>
+        <div class="mc-d">Outsourced but judgement-heavy. AI handles intelligence; CPA signs off.</div>
+      </div>
+      <div class="mc mc-br">
+        <div class="mc-lbl">Long-term TAM &mdash; don&rsquo;t start here</div>
+        <span class="chip chip-gr">Asset allocation</span><span class="chip chip-gr">Manager selection</span>
+        <div class="mc-d">In-house and judgement-heavy. Years of trust data required.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 02 BUSINESS MODEL -->
+<div class="sband"><b>02</b> Business Model</div>
+<div class="sec" id="model">
+  <div class="ey">Outcome-based pricing</div>
+  <h2 class="st">Replace the fund admin. <em>Don&rsquo;t add to their stack.</em></h2>
+  <p class="si">The wrong pitch: &ldquo;portfolio monitoring software.&rdquo; The right pitch: &ldquo;We replace your fund administrator at half the cost.&rdquo; The budget exists today. This is a vendor swap, not a new software purchase.</p>
+
+  <table class="tbl">
+    <thead><tr><th>Dimension</th><th style="color:var(--red)">&#10060; Copilot SaaS</th><th style="color:var(--teal)">&#10003; Portscope Autopilot</th></tr></thead>
+    <tbody>
+      <tr><td class="em">What you sell</td><td class="bad">Access to dashboard + tools</td><td class="good">Processed documents. Reconciled books. Delivered reports.</td></tr>
+      <tr><td class="em">Pricing unit</td><td class="bad">Per seat / per month</td><td class="good">Per document + monthly retainer per entity under management</td></tr>
+      <tr><td class="em">Who you displace</td><td class="bad">No one (pure additive cost)</td><td class="good">Fund administrator ($3&ndash;8K/mo &mdash; already outsourced, existing line item)</td></tr>
+      <tr><td class="em">Budget conversation</td><td class="bad">Software / IT (small, contested)</td><td class="good">Operations / outsourced services (large, already approved)</td></tr>
+      <tr><td class="em">Model improvements</td><td class="bad">Risk: next Claude update = you&rsquo;re a feature</td><td class="good">Benefit: faster, cheaper, higher margin, data moat deepens</td></tr>
+      <tr><td class="em">LLM backend</td><td class="bad">Optional cost-saving measure</td><td class="good">Provider-agnostic: Ollama (free local) &rarr; upgrade to Claude when needed. No GPU required to start. Zero client documents leave controlled infra. No API keys to rotate.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="g3" style="margin-top:1.5rem">
+    <div class="tier"><div class="tier-hd"><div><div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.2rem">MVP Entry</div><div class="tier-n">Document Intelligence</div></div><div class="tier-p">$500&ndash;1,500/mo<br>+ $8&ndash;15/doc</div></div><div class="tier-b"><ul><li>Auto-ingestion of capital calls, K-1s, NAVs</li><li>Structured extraction + human review UI</li><li>Document vault + full-text search</li><li>Up to 3 legal entities</li><li><strong>Replaces:</strong> manual PDF processing</li></ul></div></div>
+    <div class="tier feat"><div class="tier-hd"><div><div style="font-family:var(--mono);font-size:8px;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.2rem">&#11088; Core product</div><div class="tier-n">Portfolio Operations</div></div><div class="tier-p">$3,000&ndash;6,000/mo</div></div><div class="tier-b"><ul><li>Everything in Document Intelligence</li><li>Consolidated portfolio view across custodians + alts</li><li>Monthly reconciliation as a service</li><li>Quarterly PDF reports auto-delivered</li><li><strong>Replaces:</strong> fund admin ($3&ndash;8K/mo)</li></ul></div></div>
+    <div class="tier"><div class="tier-hd"><div><div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.2rem">Full Autopilot</div><div class="tier-n">Family Office Close</div></div><div class="tier-p">$8,000&ndash;15,000/mo</div></div><div class="tier-b"><ul><li>Full quarterly close as a service</li><li>Tax package prep (K-1 aggregation)</li><li>Family member portal + tailored reporting</li><li><strong>Replaces:</strong> in-house analyst + fund admin</li></ul></div></div>
+  </div>
+</div>
+<!-- 03 PERSONAS -->
+<div class="sband"><b>03</b> The Three Actors</div>
+<div class="sec" id="actors">
+  <div class="ey">UX Design &middot; Who actually uses this &mdash; and how rarely</div>
+  <h2 class="st">Three actors. Two interfaces. <em>One goal.</em></h2>
+  <p class="si">The biggest UX mistake would be designing for a daily power user. 90% of the system runs in the dark. When humans surface, their experience must feel like a trusted back-office partner &mdash; not software they need to learn.</p>
+  <div class="g3">
+    <div class="pc pc-g"><span class="pc-emoji">&#128105;&#8205;&#128188;</span><div class="pc-name">Sarah Chen</div><div class="pc-role">Operations Manager &mdash; Internal daily user</div><div class="pc-bio">Manages day-to-day ops for a $120M family office. Currently spends 8&ndash;12 hrs/quarter manually processing capital call PDFs, chasing fund admins, reconciling spreadsheets. She is both your power user and your sales champion. Design her interface like an email inbox &mdash; her goal is queue zero.</div><div class="pcs"><span class="pcsl">Sessions/week</span><span class="pcsv">3&ndash;5 &nbsp;&middot;&nbsp; 10 min each</span></div><div class="pcs"><span class="pcsl">Primary action</span><span class="pcsv">Review + approve docs</span></div><div class="pcs"><span class="pcsl">Success metric</span><span class="pcsv">Queue is empty</span></div><div class="pcs"><span class="pcsl">Biggest frustration</span><span class="pcsv">Chasing PDFs manually</span></div></div>
+    <div class="pc pc-t"><span class="pc-emoji">&#128104;&#8205;&#128188;</span><div class="pc-name">James Whitmore</div><div class="pc-role">Family Principal &mdash; Quarterly client</div><div class="pc-bio">Founder-turned-investor. Doesn&rsquo;t want to log in. Doesn&rsquo;t want to learn software. Wants to know: &ldquo;How are we doing? What do we owe next?&rdquo; Entry point: magic link in email, once a quarter. Design his portal for an iPad on a plane &mdash; 5 numbers and one PDF download.</div><div class="pcs"><span class="pcsl">Sessions/quarter</span><span class="pcsv">1&ndash;2 &nbsp;&middot;&nbsp; 5 min each</span></div><div class="pcs"><span class="pcsl">Entry point</span><span class="pcsv">Email magic link only</span></div><div class="pcs"><span class="pcsl">Success metric</span><span class="pcsv">&ldquo;Understood in 5 min&rdquo;</span></div><div class="pcs"><span class="pcsl">Biggest fear</span><span class="pcsv">Data breach / complexity</span></div></div>
+    <div class="pc pc-n"><span class="pc-emoji">&#129302;</span><div class="pc-name">The Autopilot</div><div class="pc-role">Background pipeline &mdash; Always on, no interface</div><div class="pc-bio">Receives capital calls at 2am. Classifies and extracts them while Sarah sleeps. Runs monthly reconciliation. Schedules quarterly close. Delivers reports to the right people. Nobody&rsquo;s watching &mdash; and that&rsquo;s the point. When it works, it&rsquo;s invisible. When it fails, it surfaces clearly.</div><div class="pcs"><span class="pcsl">Human involvement</span><span class="pcsv">&lt;10% of all work</span></div><div class="pcs"><span class="pcsl">Failure surface</span><span class="pcsv">Review queue + email alert</span></div><div class="pcs"><span class="pcsl">Trigger for humans</span><span class="pcsv">Any field confidence &lt; 85%</span></div><div class="pcs"><span class="pcsl">Definition of success</span><span class="pcsv">Nothing needed from anyone</span></div></div>
+  </div>
+</div>
+
+<!-- 04 USER JOURNEYS -->
+<div class="sband"><b>04</b> User Journeys</div>
+<div class="sec" id="journeys">
+  <div class="ey">End-to-end flows for each actor</div>
+  <h2 class="st">Every touchpoint, <em>designed for impact</em></h2>
+  <p class="si">Three magic moments that turn skeptical pilot clients into champions. Engineer every onboarding session to land at least one of these three.</p>
+
+  <div class="moments">
+    <div class="moment mo-g"><div class="mo-num">1</div><div class="mo-title">First auto-approved document</div><div class="mo-desc">Sarah forwards a capital call. Goes to make coffee. Returns to a green &ldquo;Auto-approved 98%&rdquo; badge. She didn&rsquo;t touch anything. &ldquo;<em>Oh. It just... worked.</em>&rdquo;</div></div>
+    <div class="moment mo-t"><div class="mo-num">2</div><div class="mo-title">First quarterly report while they slept</div><div class="mo-desc">James opens email Monday morning to find Q1 report already there. Sarah didn&rsquo;t stay late. &ldquo;<em>This is what we paid the fund admin $6K a month for.</em>&rdquo;</div></div>
+    <div class="moment mo-n"><div class="mo-num">3</div><div class="mo-title">AI finds something Sarah missed</div><div class="mo-desc">Sarah asks about real estate exposure. The AI finds 3 docs she&rsquo;d forgotten &mdash; a 2023 co-invest, a 2024 NAV with a RE sleeve. &ldquo;<em>It found that in 10 seconds. I would have missed it.</em>&rdquo;</div></div>
+  </div>
+
+  <div class="jmap">
+    <div class="jhead"><div class="jav jav-g">&#128105;&#8205;&#128188;</div><div class="jht"><h3>Sarah &mdash; Monday morning, capital call processed overnight</h3><p>Fund GP sent capital call email Friday 4:47pm. Pipeline processed it while she was at dinner. Queue shows 1 item Monday morning.</p></div></div>
+    <div class="steps">
+      <div class="step"><div class="sdot sd-a">&#9993;</div><div class="slbl">Email received</div><div class="ssub">Fund GP sends to docs@portscope.domain</div><div class="stm">Fri 4:47pm</div></div>
+      <div class="step"><div class="sdot sd-a">&#9881;</div><div class="slbl">Auto-extracted</div><div class="ssub">LLM extracts fields. 97% confidence. Done in 45s.</div><div class="stm">Fri 4:48pm</div></div>
+      <div class="step"><div class="sdot sd-a">&#128276;</div><div class="slbl">Sarah notified</div><div class="ssub">&ldquo;1 doc ready for review&rdquo; email sent</div><div class="stm">Fri 4:49pm</div></div>
+      <div class="step"><div class="sdot sd-g">&#128065;</div><div class="slbl">Reviews queue</div><div class="ssub">Opens app Mon. PDF + fields side-by-side.</div><div class="stm">Mon 9:02am</div></div>
+      <div class="step"><div class="sdot sd-g">&#10003;</div><div class="slbl">Approved</div><div class="ssub">Clicks Approve. Capital event written to DB.</div><div class="stm">Mon 9:04am</div></div>
+      <div class="step"><div class="sdot sd-a">&#128197;</div><div class="slbl">Wire reminder</div><div class="ssub">Calendar alert set. Exposure updated. Done.</div><div class="stm">Mon 9:04am</div></div>
+    </div>
+    <div class="ebar"><div class="ebar-lbl">Sarah&rsquo;s emotional state across the week &rarr;</div><div class="ecurve"><div class="eb eb-u" style="height:48%"></div><div class="eb eb-n" style="height:24%"></div><div class="eb eb-p" style="height:60%"></div><div class="eb eb-h" style="height:94%"></div><div class="eb eb-h" style="height:88%"></div><div class="eb eb-p" style="height:70%"></div></div></div>
+  </div>
+
+  <div class="jmap" style="margin-top:1.5rem">
+    <div class="jhead"><div class="jav jav-t">&#128104;&#8205;&#128188;</div><div class="jht"><h3>James &mdash; Q1 report delivered while everyone slept</h3><p>Temporal quarterly workflow ran April 5 at 2am. Sarah approved draft April 7. Report + magic link delivered automatically.</p></div></div>
+    <div class="steps">
+      <div class="step"><div class="sdot sd-a">&#9881;</div><div class="slbl">Auto-close runs</div><div class="ssub">Temporal cron. Analytics + PDF generated.</div><div class="stm">Apr 5 &middot; 2am</div></div>
+      <div class="step"><div class="sdot sd-g">&#10003;</div><div class="slbl">Sarah approves</div><div class="ssub">Reviews draft. Clicks &ldquo;Send to family.&rdquo;</div><div class="stm">Apr 7 &middot; 10am</div></div>
+      <div class="step"><div class="sdot sd-a">&#9993;</div><div class="slbl">Email delivered</div><div class="ssub">Narrative summary + PDF + magic link.</div><div class="stm">Apr 7 &middot; 10:02am</div></div>
+      <div class="step"><div class="sdot sd-t">&#128279;</div><div class="slbl">James clicks</div><div class="ssub">No login. Straight to portal. 7-day session.</div><div class="stm">Apr 8 &middot; 8:30am</div></div>
+      <div class="step"><div class="sdot sd-t">&#128202;</div><div class="slbl">Reads overview</div><div class="ssub">5 numbers, understood in 4 minutes. No scrolling.</div><div class="stm">Apr 8 &middot; 8:34am</div></div>
+      <div class="step"><div class="sdot sd-t">&#128196;</div><div class="slbl">Downloads PDF</div><div class="ssub">Saves to iPad. Shares with advisor. Done for quarter.</div><div class="stm">Apr 8 &middot; 8:35am</div></div>
+    </div>
+    <div class="ebar"><div class="ebar-lbl">James&rsquo;s emotional state across the quarter &rarr;</div><div class="ecurve"><div class="eb eb-n" style="height:30%"></div><div class="eb eb-n" style="height:22%"></div><div class="eb eb-u" style="height:45%"></div><div class="eb eb-p" style="height:68%"></div><div class="eb eb-h" style="height:96%"></div><div class="eb eb-h" style="height:86%"></div></div></div>
+  </div>
+</div>
+<!-- 05 UX SCREENS -->
+<div class="sband"><b>05</b> UX Screens &mdash; Wireframes</div>
+<div class="sec" id="screens">
+  <div class="ey">Interface design &middot; What the product actually looks like</div>
+  <h2 class="st">Two interfaces, <em>radically different</em></h2>
+  <p class="si">Sarah&rsquo;s interface borrows email inbox psychology &mdash; queue zero is the goal. James&rsquo;s portal is designed for an iPad on a plane: 5 numbers and one download button. That&rsquo;s the entire client-facing product surface.</p>
+
+  <div style="margin-bottom:.4rem"><div class="ann">Sarah&rsquo;s primary screen &mdash; inbox-style queue, not a dashboard. Auto-approved items require zero action but remain visible for audit trail.</div></div>
+  <div class="wf" style="margin-bottom:2rem">
+    <div class="wfc"><div class="wfd wfr"></div><div class="wfd wfy"></div><div class="wfd wfg"></div><div class="wfurl">app.portscope.io/review</div></div>
+    <div class="wtop"><span class="wlogo">PORTSCOPE</span><span class="wusr">Sarah Chen &nbsp;&middot;&nbsp; Whitmore Family Office</span></div>
+    <div class="wq-wrap">
+      <div class="wq-nav">
+        <div class="wq-ni a">Review Queue <span class="wq-nb">3</span></div>
+        <div class="wq-ni">Portfolio</div><div class="wq-ni">Funds</div><div class="wq-ni">Reports</div><div class="wq-ni">AI Analyst</div>
+        <div style="margin-top:1rem;padding:.3rem .55rem;font-family:var(--mono);font-size:7.5px;text-transform:uppercase;letter-spacing:.08em;color:#9aa5b8">Upcoming</div>
+        <div style="padding:.2rem .55rem;font-size:9.5px;color:#dc3545;font-weight:600">&#9888; Blackstone RE IX<br>Due Apr 30</div>
+      </div>
+      <div class="wq-main">
+        <div class="wq-hdr">Review Queue <span style="font-weight:400;color:#9aa5b8;font-size:10.5px">&nbsp;&mdash;&nbsp; 3 items</span><span class="wq-meta">Last processed: 2 min ago</span></div>
+        <div class="qi sel"><div class="qico qc">&#128196;</div><div class="qi-info"><div class="qi-n">Blackstone Real Estate IX &mdash; Capital Call</div><div class="qi-m">$847,500 &nbsp;&middot;&nbsp; Due Apr 30 &nbsp;&middot;&nbsp; Received today</div></div><span class="qibadge qb-r">Review</span></div>
+        <div class="qi"><div class="qico qd">&#128176;</div><div class="qi-info"><div class="qi-n">KKR Americas XII &mdash; Distribution Notice</div><div class="qi-m">$1,240,000 &nbsp;&middot;&nbsp; Q1 2026 &nbsp;&middot;&nbsp; Auto-approved 99%</div></div><span class="qibadge qb-a">Auto &#10003;</span></div>
+        <div class="qi"><div class="qico qn">&#128202;</div><div class="qi-info"><div class="qi-n">Apollo Credit Fund VIII &mdash; NAV Statement</div><div class="qi-m">Q4 2025 &nbsp;&middot;&nbsp; Table extraction uncertain</div></div><span class="qibadge qb-h">Review</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:.4rem"><div class="ann">Document review: original PDF on left, extracted fields on right. Yellow field is flagged below 85% confidence. Sarah edits inline, clicks Approve. Her correction feeds back into fine-tuning.</div></div>
+  <div class="wf" style="margin-bottom:2rem">
+    <div class="wfc"><div class="wfd wfr"></div><div class="wfd wfy"></div><div class="wfd wfg"></div><div class="wfurl">app.portscope.io/review/doc_xKqBR8...</div></div>
+    <div class="wtop"><span class="wlogo">PORTSCOPE</span><div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:9.5px;color:rgba(232,237,245,.45)">Blackstone RE IX &nbsp;&middot;&nbsp; Capital Call</span><span style="background:rgba(196,154,56,.15);color:var(--gold2);font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:3px">1 field needs review</span></div><span class="wusr">Sarah Chen</span></div>
+    <div class="rv-layout">
+      <div class="rv-pdf">
+        <div style="font-family:var(--mono);font-size:7.5px;color:#9aa5b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem">Original Document</div>
+        <div class="pdf-mock">
+          <h4>BLACKSTONE REAL ESTATE PARTNERS IX, L.P.</h4>
+          <div>CAPITAL CONTRIBUTION NOTICE</div><div style="height:4px"></div>
+          <div>Date: April 7, 2026 &nbsp;&nbsp; To: Whitmore Family Trust I</div><div style="height:5px"></div>
+          <div>Capital contribution required of investor:</div><div style="height:3px"></div>
+          <div class="pdf-hl"><strong>USD $847,500.00</strong></div><div style="height:3px"></div>
+          <div>representing 2.35% of your total commitment of $36,000,000</div><div style="height:6px"></div>
+          <div>Due Date: <span class="pdf-hl">April 30, 2026</span></div><div style="height:4px"></div>
+          <div>Wire Instructions: JPMorgan Chase</div>
+          <div>ABA: <span class="pdf-hl" style="background:rgba(255,200,80,.35)">021000021</span> &nbsp; Acct: BX RE Partners IX</div>
+        </div>
+      </div>
+      <div class="rv-fields">
+        <div style="font-size:10px;font-weight:600;color:#1a2030;margin-bottom:.5rem;display:flex;justify-content:space-between"><span>Extracted Fields</span><span style="font-family:var(--mono);font-size:8px;background:#fff3cd;color:#856404;padding:2px 5px;border-radius:2px">1 flagged</span></div>
+        <div class="fr"><div class="fr-lbl">Document Type <span class="conf cg">99%</span></div><div class="fr-val fok">CAPITAL_CALL</div></div>
+        <div class="fr"><div class="fr-lbl">Fund Name <span class="conf cg">98%</span></div><div class="fr-val fok">Blackstone Real Estate Partners IX</div></div>
+        <div class="fr"><div class="fr-lbl">Entity (Recipient) <span class="conf cg">96%</span></div><div class="fr-val fok">Whitmore Family Trust I</div></div>
+        <div class="fr"><div class="fr-lbl">Amount (USD) <span class="conf cg">99%</span></div><div class="fr-val fok">$847,500.00</div></div>
+        <div class="fr"><div class="fr-lbl">Due Date <span class="conf cg">97%</span></div><div class="fr-val fok">2026-04-30</div></div>
+        <div class="fr"><div class="fr-lbl">ABA Routing <span class="conf cr">&#9888; 72% &mdash; verify</span></div><div class="fr-val fwarn" contenteditable="true">021000021</div></div>
+        <div class="rv-footer"><button class="btn btn-ghost">Skip</button><button class="btn btn-ghost">Flag issue</button><button class="btn btn-approve">&#10003; Approve &amp; save</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:.4rem"><div class="ann">James&rsquo;s portal: magic link only, no password. 5 numbers answer every question he has. The PDF download is the primary call to action.</div></div>
+  <div style="max-width:400px">
+  <div class="wf">
+    <div class="wfc"><div class="wfd wfr"></div><div class="wfd wfy"></div><div class="wfd wfg"></div><div class="wfurl">portal.portscope.io/whitmore?token=ml_7x...</div></div>
+    <div class="portal-top"><span class="portal-lbl">PORTSCOPE &middot; PORTAL</span><span class="portal-name">Whitmore Family Office</span></div>
+    <div class="portal-body">
+      <div class="pnw"><div class="pnw-lbl">Total Portfolio Value &middot; As of March 31, 2026</div><div class="pnw-val">$127,440,000</div><div class="pnw-d">&#8593; $6.24M (5.1%) from Dec 31, 2025</div></div>
+      <div class="p4">
+        <div class="pmini"><div class="pmini-l">Alternatives (NAV)</div><div class="pmini-v">$84.2M</div></div>
+        <div class="pmini"><div class="pmini-l">Liquid Portfolio</div><div class="pmini-v">$43.2M</div></div>
+        <div class="pmini"><div class="pmini-l">Q1 Distributions</div><div class="pmini-v">$1.24M</div></div>
+        <div class="pmini"><div class="pmini-l">Next Capital Call</div><div class="pmini-v" style="color:#dc3545">$847K &middot; Apr 30</div></div>
+      </div>
+      <div class="rptcard"><div><div class="rptcard-l">Latest Report</div><div class="rptcard-n">Q1 2026 &mdash; Full Portfolio Review</div></div><button class="rptbtn">&#8595; PDF</button></div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- 05b FEATURE ROADMAP -->
+<div class="sband"><b>05b</b> Feature Roadmap &mdash; What to Build Next</div>
+<div class="sec" id="features">
+  <div class="ey">Beyond the queue &mdash; 8 features that complete the autopilot</div>
+  <h2 class="st">The document queue is the <em>wedge.</em><br>These features are the moat.</h2>
+  <p class="si">Each feature below expands coverage of work the family office currently does manually or doesn&rsquo;t do at all. Ranked by value delivered vs build complexity. The first three should be on the roadmap immediately after the core pipeline ships.</p>
+
+  <!-- FEATURE PRIORITY MATRIX -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:2.5rem">
+    <div style="background:rgba(40,160,132,.06);border:1px solid rgba(40,160,132,.2);border-radius:6px;padding:.85rem;text-align:center">
+      <div style="font-family:var(--mono);font-size:8px;color:var(--teal);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem">Ship next</div>
+      <div style="font-size:11.5px;font-weight:600;color:var(--white)">AI Analyst</div>
+      <div style="font-size:11.5px;font-weight:600;color:var(--white)">Wire Calendar</div>
+      <div style="font-size:11.5px;font-weight:600;color:var(--white)">Exposure Map</div>
+    </div>
+    <div style="background:rgba(196,154,56,.06);border:1px solid rgba(196,154,56,.2);border-radius:6px;padding:.85rem;text-align:center">
+      <div style="font-family:var(--mono);font-size:8px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem">Q2 targets</div>
+      <div style="font-size:11.5px;font-weight:600;color:var(--white)">Document Vault</div>
+      <div style="font-size:11.5px;font-weight:600;color:var(--white)">Cash Flow Forecast</div>
+      <div style="font-size:11.5px;font-weight:600;color:var(--white)">Reconciliation</div>
+    </div>
+    <div style="background:rgba(77,142,240,.06);border:1px solid rgba(77,142,240,.2);border-radius:6px;padding:.85rem;text-align:center">
+      <div style="font-family:var(--mono);font-size:8px;color:var(--blue);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem">Q3 targets</div>
+      <div style="font-size:11.5px;font-weight:600;color:var(--white)">Tax Package Builder</div>
+      <div style="font-size:11.5px;font-weight:600;color:var(--white)">Audit Trail</div>
+    </div>
+    <div style="background:rgba(154,126,245,.06);border:1px solid rgba(154,126,245,.2);border-radius:6px;padding:.85rem;text-align:center">
+      <div style="font-family:var(--mono);font-size:8px;color:var(--purple);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem">Future</div>
+      <div style="font-size:11.5px;font-weight:600;color:var(--white)">Alert Rules</div>
+      <div style="font-size:11.5px;font-weight:600;color:var(--white)">Multi-family member</div>
+    </div>
+  </div>
+
+  <!-- ── FEATURE 1: AI ANALYST ── -->
+  <div style="margin-bottom:3rem;padding-bottom:3rem;border-bottom:1px solid var(--b)">
+    <div style="display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap">
+      <div style="background:rgba(40,160,132,.1);border:1px solid rgba(40,160,132,.25);border-radius:6px;padding:.5rem 1rem;font-family:var(--mono);font-size:9px;color:var(--teal);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap">&#9733; Ship first</div>
+      <div>
+        <h3 style="font-family:var(--serif);font-size:1.4rem;font-weight:300;color:var(--white);line-height:1.2">&#129302; AI Analyst &mdash; Natural Language Portfolio Query</h3>
+        <p style="font-size:12.5px;color:var(--text2);margin-top:.3rem">Ask questions in plain English. Get answers cited to specific documents.</p>
+      </div>
+    </div>
+
+    <div class="g2" style="margin-bottom:1.25rem">
+      <div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">The value</div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:.75rem">Sarah can&rsquo;t answer &ldquo;What is our net exposure to US commercial real estate?&rdquo; without manually cross-referencing 14 capital call PDFs. The AI does it in 3 seconds and cites every source. This is Magic Moment 3 &mdash; the feature that turns pilot clients into referrers.</p>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">Example queries</div>
+        <div style="display:flex;flex-direction:column;gap:.35rem">
+          <div style="background:var(--surf2);border:1px solid var(--b2);border-radius:4px;padding:.4rem .75rem;font-size:12px;color:var(--text2)">&ldquo;When is our next capital call and how much?&rdquo;</div>
+          <div style="background:var(--surf2);border:1px solid var(--b2);border-radius:4px;padding:.4rem .75rem;font-size:12px;color:var(--text2)">&ldquo;Show me all distributions received from KKR funds this year&rdquo;</div>
+          <div style="background:var(--surf2);border:1px solid var(--b2);border-radius:4px;padding:.4rem .75rem;font-size:12px;color:var(--text2)">&ldquo;Which funds have the highest unfunded commitment remaining?&rdquo;</div>
+          <div style="background:var(--surf2);border:1px solid var(--b2);border-radius:4px;padding:.4rem .75rem;font-size:12px;color:var(--text2)">&ldquo;What was Whitmore Family Trust I&rsquo;s total IRR across all PE funds?&rdquo;</div>
+        </div>
+        <div style="margin-top:.85rem;display:flex;gap:.5rem;flex-wrap:wrap">
+          <span style="font-family:var(--mono);font-size:9px;background:rgba(40,160,132,.1);color:var(--teal);padding:2px 8px;border-radius:10px">RAG + pgvector</span>
+          <span style="font-family:var(--mono);font-size:9px;background:rgba(196,154,56,.1);color:var(--gold);padding:2px 8px;border-radius:10px">Staff only (Sarah)</span>
+          <span style="font-family:var(--mono);font-size:9px;background:var(--surf2);color:var(--text2);padding:2px 8px;border-radius:10px">Route: /analyst</span>
+        </div>
+      </div>
+      <!-- AI Analyst wireframe -->
+      <div class="wf">
+        <div class="wfc"><div class="wfd wfr"></div><div class="wfd wfy"></div><div class="wfd wfg"></div><div class="wfurl">app.portscope.io/analyst</div></div>
+        <div class="wtop"><span class="wlogo">PORTSCOPE</span><span class="wusr">AI Analyst &nbsp;&middot;&nbsp; Sarah Chen</span></div>
+        <div style="padding:.65rem;background:#f8f9fb;min-height:210px">
+          <!-- Chat messages -->
+          <div style="background:white;border:1px solid #e0e6ef;border-radius:5px;padding:.55rem .75rem;margin-bottom:.5rem;font-size:10.5px;color:#1a2030">
+            <div style="font-family:var(--mono);font-size:8px;color:#9aa5b8;margin-bottom:.25rem">Sarah &mdash; 9:14am</div>
+            What is our total net exposure to US commercial real estate?
+          </div>
+          <div style="background:#131e38;border-radius:5px;padding:.6rem .8rem;margin-bottom:.5rem">
+            <div style="font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.4);margin-bottom:.35rem">Portscope AI &mdash; 3 sources cited</div>
+            <div style="font-size:10.5px;color:white;line-height:1.6">Your combined US commercial RE exposure is <strong style="color:var(--gold2)">$41.2M (32.3% of alts NAV)</strong> across 3 managers: Blackstone RE IX ($22.1M), Apollo Credit VIII ($12.4M), and Starwood Capital ($6.7M).</div>
+            <div style="display:flex;gap:.35rem;margin-top:.45rem;flex-wrap:wrap">
+              <span style="font-size:8.5px;background:rgba(196,154,56,.15);color:var(--gold2);padding:2px 6px;border-radius:3px;font-family:var(--mono)">&#128196; BX RE IX Capital Call Apr 2026</span>
+              <span style="font-size:8.5px;background:rgba(196,154,56,.15);color:var(--gold2);padding:2px 6px;border-radius:3px;font-family:var(--mono)">&#128196; Apollo Credit NAV Q4 2025</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:.4rem;align-items:center;padding:.4rem 0">
+            <div style="flex:1;background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.35rem .65rem;font-size:10.5px;color:#9aa5b8">Ask a question about your portfolio&hellip;</div>
+            <div style="background:#131e38;color:var(--gold2);font-size:9px;padding:.35rem .65rem;border-radius:4px;font-weight:600">Ask</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cb">
+      <div class="cb-top"><span class="cb-f">How it works</span><span class="cb-l">LlamaIndex + pgvector + LLM via providers.py</span></div>
+      <div class="cbody"><span class="cm"># When a document is approved, chunks are embedded and stored:</span>
+<span class="kw">async def</span> <span class="fn">index_document</span>(doc_id, extracted_fields, full_text):
+    chunks = <span class="fn">chunk_document</span>(full_text, extracted_fields)  <span class="cm"># semantic chunking</span>
+    embeddings = <span class="kw">await</span> <span class="fn">embed</span>(chunks)                      <span class="cm"># via LLM provider</span>
+    <span class="kw">await</span> db.documentChunk.<span class="fn">createMany</span>({ data: { chunk, embedding, docId } })
+
+<span class="cm"># On analyst query:</span>
+<span class="cm"># POST /api/analyst/query { question: "what is our RE exposure?" }</span>
+<span class="cm"># 1. Embed question → find top-k similar chunks via pgvector cosine search</span>
+<span class="cm"># 2. Build context from chunks + metadata (fund, entity, date, doc type)</span>
+<span class="cm"># 3. Send to LLM with system prompt: "Answer from context only. Cite sources."</span>
+<span class="cm"># 4. Return answer + source document IDs for citation links in UI</span></div>
+    </div>
+  </div>
+
+  <!-- ── FEATURE 2: WIRE CALENDAR ── -->
+  <div style="margin-bottom:3rem;padding-bottom:3rem;border-bottom:1px solid var(--b)">
+    <div style="display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap">
+      <div style="background:rgba(40,160,132,.1);border:1px solid rgba(40,160,132,.25);border-radius:6px;padding:.5rem 1rem;font-family:var(--mono);font-size:9px;color:var(--teal);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap">&#9733; Ship first</div>
+      <div>
+        <h3 style="font-family:var(--serif);font-size:1.4rem;font-weight:300;color:var(--white);line-height:1.2">&#128197; Capital Call Calendar &amp; Wire Manager</h3>
+        <p style="font-size:12.5px;color:var(--text2);margin-top:.3rem">Upcoming wire deadlines extracted automatically. One missed wire = LP default. This prevents it.</p>
+      </div>
+    </div>
+
+    <div class="g2" style="margin-bottom:1.25rem">
+      <div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">The value</div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:.75rem">When Portscope processes a capital call, it already extracts the due date and wire instructions. The Wire Calendar surfaces these automatically &mdash; no re-entry, no spreadsheet. A missed capital call wire can trigger LP default clauses. This feature eliminates that risk entirely.</p>
+        <div style="background:var(--rdim);border:1px solid rgba(212,92,92,.2);border-radius:5px;padding:.75rem 1rem;margin-bottom:.75rem">
+          <div style="font-family:var(--mono);font-size:8.5px;color:var(--red);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.3rem">&#9888; Risk this prevents</div>
+          <div style="font-size:12.5px;color:var(--text2);line-height:1.7">Missing a capital call wire typically triggers a <strong style="color:var(--white)">2% penalty</strong> on the call amount and can result in loss of unfunded commitment rights &mdash; $17K penalty on an $847K call.</div>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <span style="font-family:var(--mono);font-size:9px;background:rgba(212,92,92,.1);color:var(--red);padding:2px 8px;border-radius:10px">High stakes</span>
+          <span style="font-family:var(--mono);font-size:9px;background:rgba(196,154,56,.1);color:var(--gold);padding:2px 8px;border-radius:10px">Sarah + James</span>
+          <span style="font-family:var(--mono);font-size:9px;background:var(--surf2);color:var(--text2);padding:2px 8px;border-radius:10px">Route: /calendar</span>
+        </div>
+      </div>
+      <!-- Wire Calendar wireframe -->
+      <div class="wf">
+        <div class="wfc"><div class="wfd wfr"></div><div class="wfd wfy"></div><div class="wfd wfg"></div><div class="wfurl">app.portscope.io/calendar</div></div>
+        <div class="wtop"><span class="wlogo">PORTSCOPE</span><span class="wusr">Wire Calendar &nbsp;&middot;&nbsp; April 2026</span></div>
+        <div style="padding:.6rem;background:#f8f9fb">
+          <!-- Urgent items -->
+          <div style="font-family:var(--mono);font-size:8px;color:#dc3545;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.35rem">&#9888; Due within 7 days</div>
+          <div style="background:white;border:1px solid #dc3545;border-radius:5px;padding:.55rem .7rem;margin-bottom:.4rem">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:11px;font-weight:600;color:#1a2030">Blackstone Real Estate IX</div>
+                <div style="font-size:9px;color:#868e96">Whitmore Family Trust I &nbsp;&middot;&nbsp; Due Apr 30</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:#dc3545">$847,500</div>
+                <div style="font-size:8px;color:#868e96">19 days remaining</div>
+              </div>
+            </div>
+            <div style="margin-top:.4rem;padding:.3rem .5rem;background:#f8f9fb;border-radius:3px;font-family:var(--mono);font-size:8px;color:#868e96">
+              ABA: 021000021 &nbsp;&middot;&nbsp; JPMorgan Chase &nbsp;&middot;&nbsp; BX RE Partners IX
+            </div>
+            <div style="margin-top:.3rem;display:flex;gap:.35rem">
+              <span style="font-size:8px;background:#fff3cd;color:#856404;padding:2px 6px;border-radius:3px;font-family:var(--mono)">Copy wire details</span>
+              <span style="font-size:8px;background:#d4edda;color:#155724;padding:2px 6px;border-radius:3px;font-family:var(--mono)">Mark wired &#10003;</span>
+            </div>
+          </div>
+          <!-- Upcoming -->
+          <div style="font-family:var(--mono);font-size:8px;color:#868e96;text-transform:uppercase;letter-spacing:.1em;margin:.45rem 0 .3rem">Upcoming &mdash; May &amp; June</div>
+          <div style="background:white;border:1px solid #e0e6ef;border-radius:5px;padding:.5rem .65rem;margin-bottom:.3rem;display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:10.5px;font-weight:600;color:#1a2030">Apollo Credit Fund VIII</div><div style="font-size:9px;color:#868e96">Due May 15 &nbsp;&middot;&nbsp; Whitmore Ventures LLC</div></div>
+            <div style="font-family:var(--mono);font-size:11.5px;font-weight:600;color:#1a2030">$310,000</div>
+          </div>
+          <div style="background:white;border:1px solid #e0e6ef;border-radius:5px;padding:.5rem .65rem;display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:10.5px;font-weight:600;color:#1a2030">KKR Americas XII &mdash; Estimated Q2</div><div style="font-size:9px;color:#868e96">Due ~Jun 30 &nbsp;&middot;&nbsp; AI forecast based on pace</div></div>
+            <div style="font-family:var(--mono);font-size:11.5px;color:#868e96">~$420K est.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="co co-t">
+      <span class="cl">What gets auto-populated</span>
+      Every approved CAPITAL_CALL document automatically creates a calendar entry with: fund name, entity, due date, amount, ABA routing, bank name, and account name &mdash; all from the extraction. Sarah can copy wire details in one click or mark as wired. Overdue items escalate to red in the queue sidebar.
+    </div>
+  </div>
+
+  <!-- ── FEATURE 3: EXPOSURE MAP ── -->
+  <div style="margin-bottom:3rem;padding-bottom:3rem;border-bottom:1px solid var(--b)">
+    <div style="display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap">
+      <div style="background:rgba(40,160,132,.1);border:1px solid rgba(40,160,132,.25);border-radius:6px;padding:.5rem 1rem;font-family:var(--mono);font-size:9px;color:var(--teal);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap">&#9733; Ship first</div>
+      <div>
+        <h3 style="font-family:var(--serif);font-size:1.4rem;font-weight:300;color:var(--white);line-height:1.2">&#127983; Exposure Analysis &amp; Concentration Risk</h3>
+        <p style="font-size:12.5px;color:var(--text2);margin-top:.3rem">Automatic concentration alerts when any single manager, strategy, or geography exceeds policy thresholds.</p>
+      </div>
+    </div>
+    <div class="g2" style="margin-bottom:1.25rem">
+      <div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">The value</div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:.75rem">Family offices often discover concentration risk only at tax time, when it&rsquo;s too late to rebalance. Portscope builds the exposure map automatically as documents are processed &mdash; updating in real time whenever a new NAV statement or capital call is approved. Flags breaches the moment they happen.</p>
+        <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.75rem">
+          <div style="display:flex;justify-content:space-between;font-size:12px">
+            <span style="color:var(--text2)">Asset class breakdown</span>
+            <span style="font-family:var(--mono);color:var(--teal2)">&#10003; by strategy tag on each fund</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px">
+            <span style="color:var(--text2)">Geographic exposure</span>
+            <span style="font-family:var(--mono);color:var(--teal2)">&#10003; from fund geography field</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px">
+            <span style="color:var(--text2)">Manager concentration</span>
+            <span style="font-family:var(--mono);color:var(--teal2)">&#10003; by GP/sponsor across all funds</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px">
+            <span style="color:var(--text2)">Configurable thresholds</span>
+            <span style="font-family:var(--mono);color:var(--teal2)">&#10003; alert when any exceeds 30%</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <span style="font-family:var(--mono);font-size:9px;background:rgba(196,154,56,.1);color:var(--gold);padding:2px 8px;border-radius:10px">Sarah + James</span>
+          <span style="font-family:var(--mono);font-size:9px;background:var(--surf2);color:var(--text2);padding:2px 8px;border-radius:10px">Route: /exposure</span>
+          <span style="font-family:var(--mono);font-size:9px;background:rgba(40,160,132,.1);color:var(--teal);padding:2px 8px;border-radius:10px">Auto-updated on approval</span>
+        </div>
+      </div>
+      <!-- Exposure wireframe -->
+      <div class="wf">
+        <div class="wfc"><div class="wfd wfr"></div><div class="wfd wfy"></div><div class="wfd wfg"></div><div class="wfurl">app.portscope.io/exposure</div></div>
+        <div class="wtop"><span class="wlogo">PORTSCOPE</span><span class="wusr">Exposure Analysis &nbsp;&middot;&nbsp; As of Apr 7</span></div>
+        <div style="padding:.6rem;background:#f8f9fb">
+          <!-- Alert banner -->
+          <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:.4rem .65rem;margin-bottom:.55rem;font-size:9.5px;color:#856404">
+            &#9888; <strong>Concentration alert:</strong> US Commercial RE at 32.3% &mdash; exceeds 30% policy threshold
+          </div>
+          <!-- Bars -->
+          <div style="font-family:var(--mono);font-size:7.5px;color:#868e96;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">By strategy &nbsp;&mdash;&nbsp; % of alternatives NAV</div>
+          <div style="display:flex;flex-direction:column;gap:.3rem;margin-bottom:.55rem">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:9px;color:#1a2030;margin-bottom:2px"><span>US Commercial Real Estate</span><span style="font-family:var(--mono);color:#dc3545;font-weight:600">32.3%</span></div>
+              <div style="height:6px;background:#e9ecef;border-radius:3px;overflow:hidden"><div style="width:32.3%;height:100%;background:#dc3545;border-radius:3px"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:9px;color:#1a2030;margin-bottom:2px"><span>US Private Credit</span><span style="font-family:var(--mono)">24.8%</span></div>
+              <div style="height:6px;background:#e9ecef;border-radius:3px;overflow:hidden"><div style="width:24.8%;height:100%;background:#4d8ef0;border-radius:3px"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:9px;color:#1a2030;margin-bottom:2px"><span>Global Buyout (PE)</span><span style="font-family:var(--mono)">22.1%</span></div>
+              <div style="height:6px;background:#e9ecef;border-radius:3px;overflow:hidden"><div style="width:22.1%;height:100%;background:#28a084;border-radius:3px"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:9px;color:#1a2030;margin-bottom:2px"><span>Venture Capital</span><span style="font-family:var(--mono)">13.5%</span></div>
+              <div style="height:6px;background:#e9ecef;border-radius:3px;overflow:hidden"><div style="width:13.5%;height:100%;background:#9a7ef5;border-radius:3px"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:9px;color:#1a2030;margin-bottom:2px"><span>Infrastructure</span><span style="font-family:var(--mono)">7.3%</span></div>
+              <div style="height:6px;background:#e9ecef;border-radius:3px;overflow:hidden"><div style="width:7.3%;height:100%;background:#868e96;border-radius:3px"></div></div>
+            </div>
+          </div>
+          <div style="font-family:var(--mono);font-size:7.5px;color:#868e96;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Top managers by NAV</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem">
+            <div style="background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.4rem .55rem"><div style="font-size:9px;font-weight:600;color:#1a2030">Blackstone</div><div style="font-family:var(--mono);font-size:9.5px;color:#dc3545">$22.1M (26%)</div></div>
+            <div style="background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.4rem .55rem"><div style="font-size:9px;font-weight:600;color:#1a2030">KKR</div><div style="font-family:var(--mono);font-size:9.5px;color:#1a2030">$18.3M (22%)</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FEATURE 4: DOCUMENT VAULT ── -->
+  <div style="margin-bottom:3rem;padding-bottom:3rem;border-bottom:1px solid var(--b)">
+    <div style="display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap">
+      <div style="background:rgba(196,154,56,.1);border:1px solid rgba(196,154,56,.25);border-radius:6px;padding:.5rem 1rem;font-family:var(--mono);font-size:9px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap">Q2 target</div>
+      <div>
+        <h3 style="font-family:var(--serif);font-size:1.4rem;font-weight:300;color:var(--white);line-height:1.2">&#128230; Document Vault &amp; Full-Text Search</h3>
+        <p style="font-size:12.5px;color:var(--text2);margin-top:.3rem">Every processed document, searchable across extracted fields. &ldquo;Find all Blackstone capital calls from 2024&rdquo; in one query.</p>
+      </div>
+    </div>
+    <div class="g2">
+      <div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">The value</div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:.75rem">Right now, finding a specific capital call notice means searching email or Dropbox. With the Vault, every document Portscope has ever processed is searchable by fund name, amount, date, document type, entity, or any extracted field. Tax season becomes &ldquo;show me all K-1s for 2025&rdquo; instead of a 3-hour folder hunt.</p>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">Search filters</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.75rem">
+          <span style="font-size:11px;background:var(--surf);border:1px solid var(--b2);color:var(--text2);padding:2px 8px;border-radius:10px">Document type</span>
+          <span style="font-size:11px;background:var(--surf);border:1px solid var(--b2);color:var(--text2);padding:2px 8px;border-radius:10px">Fund name</span>
+          <span style="font-size:11px;background:var(--surf);border:1px solid var(--b2);color:var(--text2);padding:2px 8px;border-radius:10px">Entity</span>
+          <span style="font-size:11px;background:var(--surf);border:1px solid var(--b2);color:var(--text2);padding:2px 8px;border-radius:10px">Date range</span>
+          <span style="font-size:11px;background:var(--surf);border:1px solid var(--b2);color:var(--text2);padding:2px 8px;border-radius:10px">Amount range</span>
+          <span style="font-size:11px;background:var(--surf);border:1px solid var(--b2);color:var(--text2);padding:2px 8px;border-radius:10px">Status</span>
+          <span style="font-size:11px;background:var(--surf);border:1px solid var(--b2);color:var(--text2);padding:2px 8px;border-radius:10px">Full text</span>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <span style="font-family:var(--mono);font-size:9px;background:rgba(196,154,56,.1);color:var(--gold);padding:2px 8px;border-radius:10px">Staff only (Sarah)</span>
+          <span style="font-family:var(--mono);font-size:9px;background:var(--surf2);color:var(--text2);padding:2px 8px;border-radius:10px">Route: /vault</span>
+          <span style="font-family:var(--mono);font-size:9px;background:var(--surf2);color:var(--text2);padding:2px 8px;border-radius:10px">Build: Low complexity</span>
+        </div>
+      </div>
+      <!-- Vault wireframe -->
+      <div class="wf">
+        <div class="wfc"><div class="wfd wfr"></div><div class="wfd wfy"></div><div class="wfd wfg"></div><div class="wfurl">app.portscope.io/vault</div></div>
+        <div class="wtop"><span class="wlogo">PORTSCOPE</span><span class="wusr">Document Vault &nbsp;&middot;&nbsp; 47 docs</span></div>
+        <div style="padding:.6rem;background:#f8f9fb">
+          <div style="display:flex;gap:.35rem;margin-bottom:.5rem">
+            <div style="flex:1;background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.3rem .6rem;font-size:10px;color:#868e96">Search documents&hellip;</div>
+            <div style="background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.3rem .6rem;font-size:9px;color:#868e96">All types &#9660;</div>
+            <div style="background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.3rem .6rem;font-size:9px;color:#868e96">2025&ndash;2026 &#9660;</div>
+          </div>
+          <div style="font-family:var(--mono);font-size:8px;color:#868e96;margin-bottom:.35rem">47 documents &nbsp;&middot;&nbsp; filtered: all</div>
+          <div style="display:flex;flex-direction:column;gap:.25rem">
+            <div style="background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.45rem .6rem;display:flex;align-items:center;gap:.5rem">
+              <span style="font-size:9px;background:#fff3cd;color:#856404;padding:1px 5px;border-radius:3px;font-family:var(--mono);flex-shrink:0">CALL</span>
+              <div style="flex:1;min-width:0"><div style="font-size:10px;font-weight:600;color:#1a2030;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Blackstone RE IX &mdash; Capital Call</div><div style="font-size:8.5px;color:#868e96">Apr 7, 2026 &nbsp;&middot;&nbsp; $847,500 &nbsp;&middot;&nbsp; Trust I</div></div>
+              <span style="font-size:8px;background:#d4edda;color:#155724;padding:1px 5px;border-radius:3px;flex-shrink:0">Approved</span>
+            </div>
+            <div style="background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.45rem .6rem;display:flex;align-items:center;gap:.5rem">
+              <span style="font-size:9px;background:#d4edda;color:#155724;padding:1px 5px;border-radius:3px;font-family:var(--mono);flex-shrink:0">DIST</span>
+              <div style="flex:1;min-width:0"><div style="font-size:10px;font-weight:600;color:#1a2030;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">KKR Americas XII &mdash; Distribution</div><div style="font-size:8.5px;color:#868e96">Mar 15, 2026 &nbsp;&middot;&nbsp; $1,240,000 &nbsp;&middot;&nbsp; Trust I</div></div>
+              <span style="font-size:8px;background:#d4edda;color:#155724;padding:1px 5px;border-radius:3px;flex-shrink:0">Auto &#10003;</span>
+            </div>
+            <div style="background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.45rem .6rem;display:flex;align-items:center;gap:.5rem">
+              <span style="font-size:9px;background:#d1ecf1;color:#0c5460;padding:1px 5px;border-radius:3px;font-family:var(--mono);flex-shrink:0">NAV</span>
+              <div style="flex:1;min-width:0"><div style="font-size:10px;font-weight:600;color:#1a2030;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Apollo Credit VIII &mdash; NAV Statement</div><div style="font-size:8.5px;color:#868e96">Q4 2025 &nbsp;&middot;&nbsp; $12.4M NAV &nbsp;&middot;&nbsp; Ventures LLC</div></div>
+              <span style="font-size:8px;background:#fff3cd;color:#856404;padding:1px 5px;border-radius:3px;flex-shrink:0">Review</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FEATURE 5: CASH FLOW FORECAST ── -->
+  <div style="margin-bottom:3rem;padding-bottom:3rem;border-bottom:1px solid var(--b)">
+    <div style="display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap">
+      <div style="background:rgba(196,154,56,.1);border:1px solid rgba(196,154,56,.25);border-radius:6px;padding:.5rem 1rem;font-family:var(--mono);font-size:9px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap">Q2 target</div>
+      <div>
+        <h3 style="font-family:var(--serif);font-size:1.4rem;font-weight:300;color:var(--white);line-height:1.2">&#128184; Commitment Tracker &amp; 12-Month Cash Flow Forecast</h3>
+        <p style="font-size:12.5px;color:var(--text2);margin-top:.3rem">Unfunded commitments plus AI-estimated call pace = a 12-month liquidity picture. &ldquo;We need $2.1M in liquid reserves for the next 12 months.&rdquo;</p>
+      </div>
+    </div>
+    <div class="g2">
+      <div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">The value</div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:.75rem">Most family offices don&rsquo;t know their total unfunded commitment across all funds, let alone when it will be called. Portscope knows commitment size from NAV statements, knows what has been called from capital call documents, and can estimate the remaining draw schedule based on typical PE fund pacing. The result: a liquidity forecast that updates automatically every time a document is approved.</p>
+        <div style="background:var(--gdim);border:1px solid rgba(196,154,56,.2);border-radius:5px;padding:.75rem 1rem;margin-bottom:.75rem">
+          <div style="font-family:var(--mono);font-size:8.5px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.3rem">How the forecast is built</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7">Unfunded commitment per fund (from NAV statements) &times; historical call pace for that fund vintage and strategy = projected quarterly calls. Sums to a 12-month bar chart of expected outflows plus any confirmed upcoming calls from processed capital call notices.</div>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <span style="font-family:var(--mono);font-size:9px;background:rgba(196,154,56,.1);color:var(--gold);padding:2px 8px;border-radius:10px">Sarah + James portal</span>
+          <span style="font-family:var(--mono);font-size:9px;background:var(--surf2);color:var(--text2);padding:2px 8px;border-radius:10px">Route: /forecast</span>
+        </div>
+      </div>
+      <!-- Cash flow wireframe -->
+      <div class="wf">
+        <div class="wfc"><div class="wfd wfr"></div><div class="wfd wfy"></div><div class="wfd wfg"></div><div class="wfurl">app.portscope.io/forecast</div></div>
+        <div class="wtop"><span class="wlogo">PORTSCOPE</span><span class="wusr">Cash Flow Forecast &nbsp;&middot;&nbsp; Apr 2026&ndash;Mar 2027</span></div>
+        <div style="padding:.65rem;background:#f8f9fb">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;margin-bottom:.6rem">
+            <div style="background:white;border:1px solid #e0e6ef;border-radius:5px;padding:.45rem .6rem">
+              <div style="font-size:8px;color:#868e96">Total unfunded</div>
+              <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:#dc3545">$14.2M</div>
+            </div>
+            <div style="background:white;border:1px solid #e0e6ef;border-radius:5px;padding:.45rem .6rem">
+              <div style="font-size:8px;color:#868e96">Est. next 12mo</div>
+              <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:#1a2030">~$2.1M</div>
+            </div>
+            <div style="background:white;border:1px solid #e0e6ef;border-radius:5px;padding:.45rem .6rem">
+              <div style="font-size:8px;color:#868e96">Confirmed calls</div>
+              <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:#856404">$847K</div>
+            </div>
+          </div>
+          <!-- Bar chart (simplified) -->
+          <div style="display:flex;align-items:flex-end;gap:3px;height:55px;padding:0 .2rem;margin-bottom:.3rem">
+            <div style="flex:1;background:#dc3545;border-radius:2px 2px 0 0;height:85%;position:relative"><div style="position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);font-size:7px;font-family:var(--mono);white-space:nowrap;color:#dc3545">$847K</div></div>
+            <div style="flex:1;background:#e9ecef;border-radius:2px 2px 0 0;height:20%"></div>
+            <div style="flex:1;background:#4d8ef0;border-radius:2px 2px 0 0;height:42%"></div>
+            <div style="flex:1;background:#e9ecef;border-radius:2px 2px 0 0;height:18%"></div>
+            <div style="flex:1;background:#4d8ef0;border-radius:2px 2px 0 0;height:35%"></div>
+            <div style="flex:1;background:#e9ecef;border-radius:2px 2px 0 0;height:12%"></div>
+            <div style="flex:1;background:#4d8ef0;border-radius:2px 2px 0 0;height:28%"></div>
+            <div style="flex:1;background:#e9ecef;border-radius:2px 2px 0 0;height:15%"></div>
+            <div style="flex:1;background:#9a7ef5;border-radius:2px 2px 0 0;height:45%"></div>
+            <div style="flex:1;background:#e9ecef;border-radius:2px 2px 0 0;height:10%"></div>
+            <div style="flex:1;background:#9a7ef5;border-radius:2px 2px 0 0;height:38%"></div>
+            <div style="flex:1;background:#e9ecef;border-radius:2px 2px 0 0;height:8%"></div>
+          </div>
+          <div style="display:flex;gap:3px;font-family:var(--mono);font-size:7px;color:#868e96">
+            <div style="flex:1;text-align:center">Apr</div><div style="flex:1;text-align:center">May</div><div style="flex:1;text-align:center">Jun</div><div style="flex:1;text-align:center">Jul</div><div style="flex:1;text-align:center">Aug</div><div style="flex:1;text-align:center">Sep</div><div style="flex:1;text-align:center">Oct</div><div style="flex:1;text-align:center">Nov</div><div style="flex:1;text-align:center">Dec</div><div style="flex:1;text-align:center">Jan</div><div style="flex:1;text-align:center">Feb</div><div style="flex:1;text-align:center">Mar</div>
+          </div>
+          <div style="display:flex;gap:.5rem;margin-top:.4rem;font-size:8.5px">
+            <span style="display:flex;align-items:center;gap:.3rem"><span style="width:8px;height:8px;background:#dc3545;border-radius:1px;display:inline-block"></span>Confirmed</span>
+            <span style="display:flex;align-items:center;gap:.3rem"><span style="width:8px;height:8px;background:#4d8ef0;border-radius:1px;display:inline-block"></span>Estimated</span>
+            <span style="display:flex;align-items:center;gap:.3rem"><span style="width:8px;height:8px;background:#9a7ef5;border-radius:1px;display:inline-block"></span>Speculative</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FEATURE 6: RECONCILIATION DASHBOARD ── -->
+  <div style="margin-bottom:3rem;padding-bottom:3rem;border-bottom:1px solid var(--b)">
+    <div style="display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap">
+      <div style="background:rgba(196,154,56,.1);border:1px solid rgba(196,154,56,.25);border-radius:6px;padding:.5rem 1rem;font-family:var(--mono);font-size:9px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap">Q2 target</div>
+      <div>
+        <h3 style="font-family:var(--serif);font-size:1.4rem;font-weight:300;color:var(--white);line-height:1.2">&#9989; Monthly Reconciliation Dashboard</h3>
+        <p style="font-size:12.5px;color:var(--text2);margin-top:.3rem">Compare extracted data vs custodian statements. The moment the books close, surfaced visually.</p>
+      </div>
+    </div>
+    <div class="g2">
+      <div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">The value</div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:.75rem">Sarah uploads a custodian statement CSV once a month. Portscope compares it against every approved capital event and flags mismatches &mdash; wrong amounts, missing transactions, date discrepancies. Green months are closed. The Reconciliation Dashboard shows exactly which months are clean and which need attention, with the diff highlighted.</p>
+        <div style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:.75rem;font-size:12px;color:var(--text2)">
+          <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--teal)">&#10003;</span> Upload custodian CSV &rarr; auto-compare vs DB events</div>
+          <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--teal)">&#10003;</span> Diff view: expected vs actual per line item</div>
+          <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--teal)">&#10003;</span> Mark months as reconciled (audit trail)</div>
+          <div style="display:flex;align-items:center;gap:.5rem"><span style="color:var(--teal)">&#10003;</span> Tolerance threshold (e.g. &lt;$50 rounding differences auto-cleared)</div>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <span style="font-family:var(--mono);font-size:9px;background:rgba(196,154,56,.1);color:var(--gold);padding:2px 8px;border-radius:10px">Staff only (Sarah)</span>
+          <span style="font-family:var(--mono);font-size:9px;background:var(--surf2);color:var(--text2);padding:2px 8px;border-radius:10px">Route: /reconciliation</span>
+          <span style="font-family:var(--mono);font-size:9px;background:var(--surf2);color:var(--text2);padding:2px 8px;border-radius:10px">Temporal monthly cron</span>
+        </div>
+      </div>
+      <!-- Reconciliation wireframe -->
+      <div class="wf">
+        <div class="wfc"><div class="wfd wfr"></div><div class="wfd wfy"></div><div class="wfd wfg"></div><div class="wfurl">app.portscope.io/reconciliation</div></div>
+        <div class="wtop"><span class="wlogo">PORTSCOPE</span><span class="wusr">Reconciliation &nbsp;&middot;&nbsp; 2026</span></div>
+        <div style="padding:.6rem;background:#f8f9fb">
+          <!-- Month grid -->
+          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:.3rem;margin-bottom:.6rem">
+            <div style="background:#d4edda;border:1px solid #28a745;border-radius:4px;padding:.35rem;text-align:center"><div style="font-family:var(--mono);font-size:8px;color:#155724">Jan</div><div style="font-size:8px;color:#155724">&#10003;</div></div>
+            <div style="background:#d4edda;border:1px solid #28a745;border-radius:4px;padding:.35rem;text-align:center"><div style="font-family:var(--mono);font-size:8px;color:#155724">Feb</div><div style="font-size:8px;color:#155724">&#10003;</div></div>
+            <div style="background:#d4edda;border:1px solid #28a745;border-radius:4px;padding:.35rem;text-align:center"><div style="font-family:var(--mono);font-size:8px;color:#155724">Mar</div><div style="font-size:8px;color:#155724">&#10003;</div></div>
+            <div style="background:#f8d7da;border:1px solid #dc3545;border-radius:4px;padding:.35rem;text-align:center"><div style="font-family:var(--mono);font-size:8px;color:#721c24">Apr</div><div style="font-size:8px;color:#721c24">1 diff</div></div>
+            <div style="background:#f8f9fb;border:1px solid #e0e6ef;border-radius:4px;padding:.35rem;text-align:center"><div style="font-family:var(--mono);font-size:8px;color:#868e96">May</div><div style="font-size:8px;color:#868e96">&mdash;</div></div>
+            <div style="background:#f8f9fb;border:1px solid #e0e6ef;border-radius:4px;padding:.35rem;text-align:center"><div style="font-family:var(--mono);font-size:8px;color:#868e96">Jun</div><div style="font-size:8px;color:#868e96">&mdash;</div></div>
+          </div>
+          <!-- Diff view for April -->
+          <div style="font-family:var(--mono);font-size:8px;color:#868e96;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">April mismatch &mdash; 1 item</div>
+          <div style="background:white;border:1px solid #e0e6ef;border-radius:4px;overflow:hidden">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;font-family:var(--mono);font-size:8px;background:#f8f9fb;padding:.3rem .5rem;border-bottom:1px solid #e0e6ef;color:#868e96">
+              <div>Event</div><div>Expected</div><div>Custodian</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;font-size:9px;padding:.4rem .5rem;align-items:center">
+              <div style="color:#1a2030;font-size:9px">BX RE IX Call</div>
+              <div style="font-family:var(--mono);color:#155724">$847,500</div>
+              <div style="font-family:var(--mono);color:#dc3545">$847,000 <span style="font-size:8px">&#9660;$500</span></div>
+            </div>
+          </div>
+          <div style="margin-top:.4rem;display:flex;gap:.35rem">
+            <div style="flex:1;background:#fff3cd;border:1px solid #ffc107;border-radius:3px;padding:.3rem .5rem;font-size:8.5px;color:#856404">$500 rounding difference &mdash; within tolerance?</div>
+            <div style="background:#d4edda;border:1px solid #28a745;border-radius:3px;padding:.3rem .5rem;font-size:8.5px;color:#155724;white-space:nowrap">Accept &#10003;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FEATURES 7 + 8: TAX PACKAGE + AUDIT TRAIL (side by side) ── -->
+  <div class="g2" style="margin-bottom:.5rem">
+    <div>
+      <div style="display:flex;gap:.6rem;align-items:center;margin-bottom:.85rem;flex-wrap:wrap">
+        <div style="background:rgba(77,142,240,.1);border:1px solid rgba(77,142,240,.25);border-radius:6px;padding:.35rem .75rem;font-family:var(--mono);font-size:8.5px;color:var(--blue);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap">Q3 target</div>
+        <h3 style="font-family:var(--serif);font-size:1.2rem;font-weight:300;color:var(--white)">&#128203; Tax Package Builder</h3>
+      </div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:.85rem">At tax time, family offices manually gather K-1s from dozens of fund admin portals, then organize them by entity and hand them to the accountant. Portscope already processes K-1s &mdash; the Tax Package Builder aggregates them, tracks which are outstanding vs received, and exports an organized folder for the CPA.</p>
+      <div class="wf">
+        <div class="wfc"><div class="wfd wfr"></div><div class="wfd wfy"></div><div class="wfd wfg"></div><div class="wfurl">app.portscope.io/tax/2025</div></div>
+        <div class="wtop"><span class="wlogo">PORTSCOPE</span><span class="wusr">Tax Package &nbsp;&middot;&nbsp; 2025</span></div>
+        <div style="padding:.6rem;background:#f8f9fb">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem">
+            <div style="font-size:11px;font-weight:600;color:#1a2030">Tax Year 2025 &mdash; K-1 Tracker</div>
+            <div style="font-size:8.5px;background:#131e38;color:#e0b855;padding:3px 8px;border-radius:3px;font-family:var(--mono);cursor:pointer">Export package &#8595;</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.25rem">
+            <div style="background:white;border:1px solid #28a745;border-radius:4px;padding:.4rem .55rem;display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font-size:10px;font-weight:600;color:#1a2030">Blackstone RE Partners IX</div><div style="font-size:8.5px;color:#868e96">Whitmore Family Trust I &nbsp;&middot;&nbsp; Received Mar 1</div></div>
+              <span style="font-size:8px;background:#d4edda;color:#155724;padding:1px 5px;border-radius:3px">&#10003; Received</span>
+            </div>
+            <div style="background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.4rem .55rem;display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font-size:10px;font-weight:600;color:#1a2030">KKR Americas XII, L.P.</div><div style="font-size:8.5px;color:#868e96">Whitmore Family Trust I &nbsp;&middot;&nbsp; Expected by Apr 15</div></div>
+              <span style="font-size:8px;background:#fff3cd;color:#856404;padding:1px 5px;border-radius:3px">&#128336; Pending</span>
+            </div>
+            <div style="background:white;border:1px solid #dc3545;border-radius:4px;padding:.4rem .55rem;display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font-size:10px;font-weight:600;color:#1a2030">Apollo Credit Fund VIII</div><div style="font-size:8.5px;color:#868e96">Whitmore Ventures LLC &nbsp;&middot;&nbsp; Overdue</div></div>
+              <span style="font-size:8px;background:#f8d7da;color:#721c24;padding:1px 5px;border-radius:3px">&#9888; Overdue</span>
+            </div>
+          </div>
+          <div style="margin-top:.45rem;font-size:9px;color:#868e96">3 of 8 K-1s received &nbsp;&middot;&nbsp; 2 overdue</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex;gap:.6rem;align-items:center;margin-bottom:.85rem;flex-wrap:wrap">
+        <div style="background:rgba(77,142,240,.1);border:1px solid rgba(77,142,240,.25);border-radius:6px;padding:.35rem .75rem;font-family:var(--mono);font-size:8.5px;color:var(--blue);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap">Q3 target</div>
+        <h3 style="font-family:var(--serif);font-size:1.2rem;font-weight:300;color:var(--white)">&#128274; Audit Trail</h3>
+      </div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:.85rem">Every approval, correction, and report delivery with full before/after diff. Family offices need this for compliance and for building trust with their advisors and accountants. When a regulator or auditor asks &ldquo;who changed that amount and when?&rdquo; &mdash; the answer is one click away.</p>
+      <div class="wf">
+        <div class="wfc"><div class="wfd wfr"></div><div class="wfd wfy"></div><div class="wfd wfg"></div><div class="wfurl">app.portscope.io/audit</div></div>
+        <div class="wtop"><span class="wlogo">PORTSCOPE</span><span class="wusr">Audit Trail &nbsp;&middot;&nbsp; Recent activity</span></div>
+        <div style="padding:.6rem;background:#f8f9fb;display:flex;flex-direction:column;gap:.3rem">
+          <div style="background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.45rem .6rem">
+            <div style="display:flex;justify-content:space-between;margin-bottom:.2rem">
+              <span style="font-size:10px;font-weight:600;color:#1a2030">Document approved</span>
+              <span style="font-family:var(--mono);font-size:8px;color:#868e96">Apr 7 &nbsp;9:04am</span>
+            </div>
+            <div style="font-size:9px;color:#868e96">BX RE IX Capital Call &nbsp;&middot;&nbsp; Sarah Chen</div>
+            <div style="margin-top:.25rem;font-family:var(--mono);font-size:8px;background:#f8f9fb;border-radius:2px;padding:2px 5px">
+              <span style="color:#dc3545">- aba_routing: "0210000021"</span><br>
+              <span style="color:#155724">+ aba_routing: "021000021"</span>
+            </div>
+          </div>
+          <div style="background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.45rem .6rem">
+            <div style="display:flex;justify-content:space-between;margin-bottom:.2rem">
+              <span style="font-size:10px;font-weight:600;color:#1a2030">Report delivered</span>
+              <span style="font-family:var(--mono);font-size:8px;color:#868e96">Apr 7 &nbsp;10:02am</span>
+            </div>
+            <div style="font-size:9px;color:#868e96">Q1 2026 Full Portfolio Review &nbsp;&middot;&nbsp; Sarah Chen</div>
+            <div style="font-size:9px;color:#868e96;margin-top:.2rem">Delivered to: james.whitmore@whitmorefamily.com</div>
+          </div>
+          <div style="background:white;border:1px solid #e0e6ef;border-radius:4px;padding:.45rem .6rem">
+            <div style="display:flex;justify-content:space-between;margin-bottom:.2rem">
+              <span style="font-size:10px;font-weight:600;color:#1a2030">Auto-approved</span>
+              <span style="font-family:var(--mono);font-size:8px;color:#868e96">Apr 5 &nbsp;4:48pm</span>
+            </div>
+            <div style="font-size:9px;color:#868e96">KKR Americas XII Distribution &nbsp;&middot;&nbsp; System (99% confidence)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="co co-g" style="margin-top:2rem">
+    <span class="cl">Build order rationale</span>
+    <strong>AI Analyst, Wire Calendar, and Exposure Analysis ship first</strong> because they each deliver a standalone &ldquo;wow&rdquo; moment that can be demoed live &mdash; and they&rsquo;re built largely on top of data Portscope already has. The vault, reconciliation, and forecast features require more polish but share the same underlying data model. Tax Package and Audit Trail are compliance-driven and become urgent once you have enterprise clients who need them for due diligence.
+  </div>
+</div>
+
+<!-- 06 PILOT ONBOARDING -->
+<div class="sband"><b>06</b> Pilot Onboarding</div>
+<div class="sec" id="onboarding">
+  <div class="ey">How the first 3 clients get started</div>
+  <h2 class="st">White-glove, manual, <em>by design</em></h2>
+  <p class="si">Don&rsquo;t build self-serve onboarding for the MVP. Pilot clients are onboarded by you, manually, over 2&ndash;3 sessions. This is intentional &mdash; it earns trust before the product earns it on its own.</p>
+
+  <div class="ob-step"><div class="ob-n ob-g">1</div><div class="ob-c"><h4>Discovery call (60 min) &mdash; before any code</h4><p>Interview Sarah about the current workflow. Map every document type they receive, every fund admin, every entity. Ask to see 5&ndash;10 real capital call PDFs.</p><div class="ob-detail"><strong>Leave with:</strong> Entity tree, fund list, email addresses fund admins send from, sample PDFs, and Sarah&rsquo;s biggest pain points. This becomes your fine-tuning seed dataset and onboarding config.</div><span class="ob-dur">Duration: 1 week including prep</span></div></div>
+  <div class="ob-step"><div class="ob-n ob-g">2</div><div class="ob-c"><h4>Data setup &mdash; you do this for them</h4><p>You build their entity tree. You create their fund records. You configure email forwarding: fund admin emails go to <code style="font-family:var(--mono);font-size:12px;color:var(--teal2)">whitmore@docs.portscope.io</code>.</p><div class="ob-detail"><strong>Don&rsquo;t make them do this.</strong> The moment onboarding becomes a form-filling exercise, you&rsquo;ve lost the &ldquo;we do the work&rdquo; positioning. White-glove setup is part of the service.</div><span class="ob-dur">Duration: 3&ndash;5 days, async</span></div></div>
+  <div class="ob-step"><div class="ob-n ob-t">3</div><div class="ob-c"><h4>Live demo: extract a real document in the room</h4><p>Book a 30-min call with Sarah. Ask her to forward a real capital call email live during the call. Watch it appear in the review queue together. Let her click Approve herself.</p><div class="ob-detail"><strong>This is magic moment 1.</strong> Don&rsquo;t show a recorded demo. Don&rsquo;t use sample data. Her document. Her fund. Her approval. Her queue going to zero. Do this live.</div><span class="ob-dur">Duration: 30 min &middot; highest-impact session</span></div></div>
+  <div class="ob-step"><div class="ob-n ob-t">4</div><div class="ob-c"><h4>Two-week shadow period &mdash; you watch, they operate</h4><p>For two weeks, every auto-approved document is also reviewed by you internally. You&rsquo;re a silent second pair of eyes. Catch errors before Sarah sees them.</p><div class="ob-detail"><strong>Trust before automation.</strong> Two weeks of you quietly double-checking &mdash; then showing Sarah the accuracy metrics &mdash; builds the foundation for increasing auto-approval thresholds.</div><span class="ob-dur">Duration: 2 weeks</span></div></div>
+  <div class="ob-step"><div class="ob-n ob-n2">5</div><div class="ob-c"><h4>First quarterly report delivery &mdash; the relationship moment</h4><p>At the end of the first quarter, you generate the quarterly report. Sarah approves and clicks Send. James gets the email. He clicks the magic link. You follow up: &ldquo;What did James say?&rdquo;</p><div class="ob-detail"><strong>This is when they stop thinking of you as a vendor.</strong> You delivered a quarterly close &mdash; the thing they used to dread &mdash; without them asking. Now ask for the referral.</div><span class="ob-dur">Duration: End of quarter 1</span></div></div>
+</div>
+<!-- 07 ARCHITECTURE -->
+<div class="sband"><b>07</b> System Architecture</div>
+<div class="sec" id="arch">
+  <div class="ey">Infrastructure design &mdash; actual implementation</div>
+  <h2 class="st">Provider-agnostic LLM + Docker Compose. <em>No GPU required.</em></h2>
+  <p class="si">The LLM backend is swappable via a single environment variable. Run free with Ollama locally, switch to Claude via Anthropic, or route through OpenRouter — zero code changes. MinIO provides S3-compatible storage locally, swapped for real S3 in production.</p>
+
+  <div class="arch">
+    <div class="arow"><div class="albl">Frontend</div><div class="anodes"><span class="an at">Next.js 15 App Router &nbsp;:3000</span><span class="an agr">Review queue, document review, client portal</span></div></div>
+    <div class="aarr">&darr;</div>
+    <div class="arow"><div class="albl">API</div><div class="anodes"><span class="an ab">NestJS 10 REST API &nbsp;:3001</span><span class="an agr">Documents, entities, portfolio, reporting modules</span></div></div>
+    <div class="aarr">&darr;</div>
+    <div class="arow"><div class="albl">Extractor</div><div class="anodes"><span class="an ag">Python FastAPI &nbsp;:8001</span><span class="an ag">pdfplumber (PDF &rarr; text)</span><span class="an ag">Provider abstraction layer</span><span class="an ag">Confidence scorer (heuristic validators)</span></div></div>
+    <div class="aarr">&darr;</div>
+    <div class="arow"><div class="albl">LLM (any)</div><div class="anodes"><span class="an ag">Ollama &mdash; free, local</span><span class="an ag">OpenRouter &mdash; 100+ models, pay-per-use</span><span class="an ag">Anthropic (Claude)</span><span class="an ag">OpenAI</span><span class="an ag">HuggingFace</span><span class="an ag">vLLM &mdash; self-hosted</span></div></div>
+    <div class="aarr">&darr;</div>
+    <div class="arow"><div class="albl">Data layer</div><div class="anodes"><span class="an ab">PostgreSQL 16 + pgvector &nbsp;:5432</span><span class="an ap">Temporal 1.25 &nbsp;:7233</span><span class="an agr">Redis 7 &nbsp;:6379</span><span class="an at">MinIO (S3-compat) &nbsp;:9000</span></div></div>
+  </div>
+
+  <div style="margin-top:1.5rem">
+    <div class="g2">
+      <div class="card">
+        <div class="ctag tg">LLM strategy &mdash; swap via .env</div>
+        <h4>Provider-agnostic abstraction</h4>
+        <p>A single <code style="font-family:var(--mono);color:var(--teal2)">LLM_PROVIDER</code> env var routes to Ollama (local, free), OpenRouter (100+ models, pay-per-use), Anthropic, OpenAI, HuggingFace, vLLM, or any OpenAI-compatible endpoint. No DGX Spark required — start free with Ollama on any machine.</p>
+      </div>
+      <div class="card">
+        <div class="ctag tt">Object storage &mdash; local then prod</div>
+        <h4>MinIO (dev) → S3 (prod)</h4>
+        <p>MinIO runs in Docker Compose and exposes a fully S3-compatible API. No AWS account needed for development. In production, swap four env vars to point at real S3, Cloudflare R2, or DigitalOcean Spaces. Same code, zero changes.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="co co-g" style="margin-top:1.25rem">
+    <span class="cl">Key infrastructure decisions</span>
+    <strong>No DGX Spark:</strong> LLM inference is provider-agnostic. Run Ollama free locally, upgrade to Claude/GPT-4o when needed. &nbsp;&nbsp;<strong>Temporal:</strong> Durable workflows survive crashes; human-in-the-loop approval via signals (7-day wait, no polling). &nbsp;&nbsp;<strong>pdfplumber:</strong> Primary PDF parser, clean text extraction for LLM prompts, with boto3/S3 download and local file fallbacks.
+  </div>
+</div>
+
+<!-- 08 FOLDER STRUCTURE -->
+<div class="sband"><b>08</b> Monorepo Folder Structure</div>
+<div class="sec" id="structure">
+  <div class="ey">pnpm workspaces + Turborepo &mdash; actual codebase</div>
+  <h2 class="st">The complete <em>repository layout</em></h2>
+  <p class="si">Four deployable apps, three shared packages, Docker Compose for all infrastructure. Python extractor runs as a sidecar &mdash; <strong style="color:var(--white)">no DGX Spark, no GPU required</strong>. LLM backend configured via env var.</p>
+  <div class="ftabs" style="border-radius:6px">
+    <div class="cb-top"><span class="cb-f">portscope-dev/</span><span class="cb-l">monorepo root &middot; pnpm + Turborepo</span></div>
+    <div class="cbody"><span class="fn">portscope-dev/</span>
+<span class="cm">&#9500;&#9472;&#9472; apps/                          # Deployable applications</span>
+<span class="cm">&#9474;</span>
+<span class="fn">&#9474;   &#9500;&#9472;&#9472; api/</span>                       <span class="cm"># NestJS &mdash; core API (AWS ECS Fargate)</span>
+<span class="fn">&#9474;   &#9474;   &#9492;&#9472;&#9472; src/</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; documents/</span>          <span class="cm"># Ingestion: controller, service, dto</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; portfolio/</span>          <span class="cm"># Holdings, NAV, IRR, exposure</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; entities/</span>           <span class="cm"># Family, trusts, LLCs, SPVs</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; reporting/</span>          <span class="cm"># Report generator, PDF, email delivery</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; rag/</span>                <span class="cm"># AI analyst endpoint &rarr; DGX RAG service</span>
+<span class="fn">&#9474;   &#9474;       &#9492;&#9472;&#9472; auth/</span>               <span class="cm"># JWT + magic link auth</span>
+<span class="cm">&#9474;</span>
+<span class="fn">&#9474;   &#9500;&#9472;&#9472; web/</span>                       <span class="cm"># Next.js 14 App Router (Vercel)</span>
+<span class="fn">&#9474;   &#9474;   &#9492;&#9472;&#9472; app/</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; (review)/</span>           <span class="cm"># Internal staff interface (Sarah)</span>
+<span class="fn">&#9474;   &#9474;       &#9474;   &#9500;&#9472;&#9472; queue/page.tsx</span>  <span class="cm"># Document review queue &mdash; inbox UX</span>
+<span class="fn">&#9474;   &#9474;       &#9474;   &#9500;&#9472;&#9472; documents/[id]/page.tsx</span>  <span class="cm"># PDF + extracted fields side-by-side</span>
+<span class="fn">&#9474;   &#9474;       &#9474;   &#9492;&#9472;&#9472; reports/[id]/page.tsx</span>    <span class="cm"># Draft report approval + send</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; (portal)/</span>           <span class="cm"># Client read-only portal (James)</span>
+<span class="fn">&#9474;   &#9474;       &#9474;   &#9500;&#9472;&#9472; page.tsx</span>        <span class="cm"># Net worth overview + report download</span>
+<span class="fn">&#9474;   &#9474;       &#9474;   &#9500;&#9472;&#9472; reports/</span>
+<span class="fn">&#9474;   &#9474;       &#9474;   &#9492;&#9472;&#9472; funds/</span>
+<span class="fn">&#9474;   &#9474;       &#9492;&#9472;&#9472; layout.tsx</span>
+<span class="fn">&#9474;   &#9474;   &#9492;&#9472;&#9472; components/</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; document-review/</span>    <span class="cm"># ExtractionFields, PDFViewer, ReviewActions</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; portal/</span>             <span class="cm"># NetWorthCard, FundTable, ReportCard</span>
+<span class="fn">&#9474;   &#9474;       &#9492;&#9472;&#9472; ui/</span>                 <span class="cm"># shadcn/ui + ConfidenceBadge, QueueItem</span>
+<span class="cm">&#9474;</span>
+<span class="fn">&#9474;   &#9500;&#9472;&#9472; extractor/</span>                 <span class="cm"># Python FastAPI &mdash; provider-agnostic LLM extraction</span>
+<span class="fn">&#9474;   &#9474;   &#9492;&#9472;&#9472; src/</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; api/routes.py</span>       <span class="cm"># POST /classify, POST /extract</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; extractors/</span>
+<span class="fn">&#9474;   &#9474;       &#9474;   &#9500;&#9472;&#9472; capital_call.py</span>
+<span class="fn">&#9474;   &#9474;       &#9474;   &#9500;&#9472;&#9472; distribution.py</span>
+<span class="fn">&#9474;   &#9474;       &#9474;   &#9500;&#9472;&#9472; nav_statement.py</span>
+<span class="fn">&#9474;   &#9474;       &#9474;   &#9492;&#9472;&#9472; k1_tax.py</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; models/</span>
+<span class="fn">&#9474;   &#9474;       &#9474;   &#9500;&#9472;&#9472; loader.py</span>       <span class="cm"># vLLM client init</span>
+<span class="fn">&#9474;   &#9474;       &#9474;   &#9492;&#9472;&#9472; schemas.py</span>      <span class="cm"># Pydantic schemas per doc type</span>
+<span class="fn">&#9474;   &#9474;       &#9500;&#9472;&#9472; parsing/pdf_parser.py</span>   <span class="cm"># Docling + Unstructured</span>
+<span class="fn">&#9474;   &#9474;       &#9492;&#9472;&#9472; confidence/scorer.py</span>
+<span class="cm">&#9474;</span>
+<span class="fn">&#9474;   &#9492;&#9472;&#9472; worker/</span>                    <span class="cm"># Temporal workers</span>
+<span class="fn">&#9474;       &#9492;&#9472;&#9472; src/</span>
+<span class="fn">&#9474;           &#9500;&#9472;&#9472; workflows/ingest.workflow.ts</span>   <span class="cm"># Full pipeline with approval signal</span>
+<span class="fn">&#9474;           &#9492;&#9472;&#9472; activities/ingest.activities.ts</span>
+<span class="cm">&#9474;</span>
+<span class="cm">&#9500;&#9472;&#9472; packages/</span>
+<span class="fn">&#9474;   &#9500;&#9472;&#9472; db/</span>                        <span class="cm"># Prisma 6 schema + generated client</span>
+<span class="fn">&#9474;   &#9500;&#9472;&#9472; shared/src/types/</span>          <span class="cm"># Document, Portfolio, Entity types</span>
+<span class="fn">&#9474;   &#9492;&#9472;&#9472; extractor-client/</span>          <span class="cm"># TypeScript HTTP client for Python extractor</span>
+<span class="cm">&#9474;</span>
+<span class="fn">&#9500;&#9472;&#9472; docker-compose.yml</span>             <span class="cm"># PostgreSQL 16, Temporal 1.25, Redis 7, MinIO</span>
+<span class="fn">&#9500;&#9472;&#9472; .env</span>                           <span class="cm"># LLM_PROVIDER, DATABASE_URL, S3 config</span>
+<span class="fn">&#9500;&#9472;&#9472; turbo.json</span>
+<span class="fn">&#9492;&#9472;&#9472; pnpm-workspace.yaml</span></div>
+  </div>
+</div>
+<!-- 09 FRONTEND FILES -->
+<div class="sband"><b>09</b> Frontend Files &mdash; What They Actually Look Like</div>
+<div class="sec" id="frontend">
+  <div class="ey">apps/web &mdash; Next.js 14 App Router</div>
+  <h2 class="st">The actual code behind <em>every screen</em></h2>
+  <p class="si">Seven key files. Server components fetch data at request time. Client components own interaction state. Confidence scoring is a first-class UI concern &mdash; never hidden in metadata. Every approval sends a Temporal signal that resumes a waiting workflow.</p>
+
+  <div class="ftabs" id="file-tabs">
+    <div class="ftab-bar">
+      <div class="ftab on" data-tab="0">(review)/queue/page.tsx</div>
+      <div class="ftab" data-tab="1">(review)/documents/[id]/page.tsx</div>
+      <div class="ftab" data-tab="2">ExtractionFields.tsx</div>
+      <div class="ftab" data-tab="3">ConfidenceBadge.tsx</div>
+      <div class="ftab" data-tab="4">api/approve/route.ts</div>
+      <div class="ftab" data-tab="5">(portal)/page.tsx</div>
+      <div class="ftab" data-tab="6">ingest.workflow.ts</div>
+    </div>
+
+    <div class="ftab-pane on" data-pane="0"><div class="cbody"><span class="cm">// apps/web/app/(review)/queue/page.tsx</span>
+<span class="cm">// Server component &mdash; all data fetched at request time, no loading spinners</span>
+<span class="kw">import</span> { Suspense } <span class="kw">from</span> <span class="str">&#39;react&#39;</span>
+<span class="kw">import</span> { getReviewQueue } <span class="kw">from</span> <span class="str">&#39;@/lib/api/documents&#39;</span>
+<span class="kw">import</span> { QueueList } <span class="kw">from</span> <span class="str">&#39;@/components/document-review/QueueList&#39;</span>
+<span class="kw">import</span> { QueueSkeleton } <span class="kw">from</span> <span class="str">&#39;@/components/document-review/QueueSkeleton&#39;</span>
+<span class="kw">import</span> { SideNav } <span class="kw">from</span> <span class="str">&#39;@/components/SideNav&#39;</span>
+<span class="kw">import</span> { UpcomingCallsPanel } <span class="kw">from</span> <span class="str">&#39;@/components/UpcomingCallsPanel&#39;</span>
+
+<span class="kw">export default async function</span> <span class="fn">ReviewQueuePage</span>() {
+  <span class="cm">// Server-side data fetch &mdash; no useEffect, no client-side loading state</span>
+  <span class="kw">const</span> queue = <span class="kw">await</span> <span class="fn">getReviewQueue</span>()
+
+  <span class="kw">return</span> (
+    &lt;<span class="ty">div</span> className=<span class="str">&quot;flex h-screen overflow-hidden&quot;</span>&gt;
+
+      &lt;<span class="ty">aside</span> className=<span class="str">&quot;w-56 border-r bg-background flex flex-col shrink-0&quot;</span>&gt;
+        <span class="cm">{/* SideNav highlights &#39;queue&#39; and shows the pending badge count */}</span>
+        &lt;<span class="ty">SideNav</span> activeItem=<span class="str">&quot;queue&quot;</span> pendingCount={queue.pending} /&gt;
+        <span class="cm">{/* Upcoming wire deadlines pinned to bottom of sidebar */}</span>
+        &lt;<span class="ty">UpcomingCallsPanel</span> calls={queue.upcomingCalls} /&gt;
+      &lt;/<span class="ty">aside</span>&gt;
+
+      &lt;<span class="ty">main</span> className=<span class="str">&quot;flex-1 overflow-auto&quot;</span>&gt;
+        &lt;<span class="ty">div</span> className=<span class="str">&quot;flex items-center justify-between px-5 py-4 border-b&quot;</span>&gt;
+          &lt;<span class="ty">h1</span> className=<span class="str">&quot;text-sm font-semibold&quot;</span>&gt;
+            Review Queue
+            &lt;<span class="ty">span</span> className=<span class="str">&quot;ml-2 text-muted-foreground font-normal&quot;</span>&gt;
+              &mdash; {queue.pending} items
+            &lt;/<span class="ty">span</span>&gt;
+          &lt;/<span class="ty">h1</span>&gt;
+          &lt;<span class="ty">span</span> className=<span class="str">&quot;text-xs font-mono text-muted-foreground&quot;</span>&gt;
+            Last processed: {queue.lastProcessedAgo}
+          &lt;/<span class="ty">span</span>&gt;
+        &lt;/<span class="ty">div</span>&gt;
+
+        <span class="cm">{/* QueueList is a client component &mdash; manages which item is selected */}</span>
+        &lt;<span class="ty">Suspense</span> fallback={&lt;<span class="ty">QueueSkeleton</span> /&gt;}&gt;
+          &lt;<span class="ty">QueueList</span> items={queue.items} /&gt;
+        &lt;/<span class="ty">Suspense</span>&gt;
+      &lt;/<span class="ty">main</span>&gt;
+
+    &lt;/<span class="ty">div</span>&gt;
+  )
+}
+
+<span class="cm">// lib/api/documents.ts &mdash; the server-side fetcher</span>
+<span class="kw">export async function</span> <span class="fn">getReviewQueue</span>() {
+  <span class="kw">const</span> session = <span class="kw">await</span> <span class="fn">requireStaffSession</span>()
+  <span class="kw">const</span> items = <span class="kw">await</span> db.document.<span class="fn">findMany</span>({
+    where: {
+      familyOfficeId: session.familyOfficeId,   <span class="cm">// &#8592; multi-tenant guard, always</span>
+      status: { <span class="kw">in</span>: [<span class="str">&#39;REVIEW&#39;</span>, <span class="str">&#39;APPROVED&#39;</span>] },
+    },
+    orderBy: [
+      { status: <span class="str">&#39;asc&#39;</span> },       <span class="cm">// REVIEW first</span>
+      { dueDate: <span class="str">&#39;asc&#39;</span> },      <span class="cm">// Urgent capital calls pinned to top</span>
+    ],
+    include: { extraction: { select: { confidence: <span class="kw">true</span>, docType: <span class="kw">true</span> } } },
+  })
+  <span class="kw">return</span> {
+    items,
+    pending: items.<span class="fn">filter</span>(d =&gt; d.status === <span class="str">&#39;REVIEW&#39;</span>).length,
+    upcomingCalls: <span class="kw">await</span> <span class="fn">getUpcomingCapitalCalls</span>(session.familyOfficeId),
+    lastProcessedAgo: <span class="kw">await</span> <span class="fn">getLastProcessedRelative</span>(session.familyOfficeId),
+  }
+}</div></div>
+
+    <div class="ftab-pane" data-pane="1"><div class="cbody"><span class="cm">// apps/web/app/(review)/documents/[id]/page.tsx</span>
+<span class="cm">// Server component &mdash; PDF URL pre-signed server-side (secure, 15 min expiry)</span>
+<span class="kw">import</span> { notFound } <span class="kw">from</span> <span class="str">&#39;next/navigation&#39;</span>
+<span class="kw">import</span> { getDocument } <span class="kw">from</span> <span class="str">&#39;@/lib/api/documents&#39;</span>
+<span class="kw">import</span> { getPresignedUrl } <span class="kw">from</span> <span class="str">&#39;@/lib/s3&#39;</span>
+<span class="kw">import</span> { PDFViewer } <span class="kw">from</span> <span class="str">&#39;@/components/document-review/PDFViewer&#39;</span>
+<span class="kw">import</span> { ExtractionFields } <span class="kw">from</span> <span class="str">&#39;@/components/document-review/ExtractionFields&#39;</span>
+<span class="kw">import</span> { ReviewActions } <span class="kw">from</span> <span class="str">&#39;@/components/document-review/ReviewActions&#39;</span>
+<span class="kw">import</span> { QueueSidebar } <span class="kw">from</span> <span class="str">&#39;@/components/document-review/QueueSidebar&#39;</span>
+<span class="kw">import</span> { ReviewPageHeader } <span class="kw">from</span> <span class="str">&#39;@/components/document-review/ReviewPageHeader&#39;</span>
+
+<span class="kw">interface</span> <span class="ty">Props</span> { params: { id: <span class="ty">string</span> } }
+
+<span class="kw">export default async function</span> <span class="fn">DocumentReviewPage</span>({ params }: <span class="ty">Props</span>) {
+  <span class="kw">const</span> doc = <span class="kw">await</span> <span class="fn">getDocument</span>(params.id)  <span class="cm">// includes familyOfficeId guard</span>
+  <span class="kw">if</span> (!doc) <span class="fn">notFound</span>()
+
+  <span class="cm">// Pre-signed S3 URL generated server-side &mdash; never exposed to browser permanently</span>
+  <span class="kw">const</span> pdfUrl = <span class="kw">await</span> <span class="fn">getPresignedUrl</span>(doc.s3Key, { expiresIn: <span class="nu">900</span> })
+
+  <span class="kw">return</span> (
+    &lt;<span class="ty">div</span> className=<span class="str">&quot;flex h-screen flex-col overflow-hidden&quot;</span>&gt;
+
+      <span class="cm">{/* Topbar: document name, confidence summary, nav back to queue */}</span>
+      &lt;<span class="ty">ReviewPageHeader</span> document={doc} /&gt;
+
+      &lt;<span class="ty">div</span> className=<span class="str">&quot;flex flex-1 overflow-hidden&quot;</span>&gt;
+
+        <span class="cm">{/* Left strip: queue mini-nav so Sarah can jump between items */}</span>
+        &lt;<span class="ty">QueueSidebar</span> currentId={params.id} /&gt;
+
+        <span class="cm">{/* Centre: PDF viewer with highlight overlays */}</span>
+        &lt;<span class="ty">div</span> className=<span class="str">&quot;flex-1 bg-muted/20 border-r overflow-hidden&quot;</span>&gt;
+          &lt;<span class="ty">PDFViewer</span>
+            url={pdfUrl}
+            highlights={doc.extraction?.highlights ?? []}
+          /&gt;
+        &lt;/<span class="ty">div</span>&gt;
+
+        <span class="cm">{/* Right panel: extracted fields + approve footer */}</span>
+        &lt;<span class="ty">div</span> className=<span class="str">&quot;w-80 flex flex-col border-l bg-background shrink-0&quot;</span>&gt;
+          &lt;<span class="ty">div</span> className=<span class="str">&quot;flex-1 overflow-auto p-4&quot;</span>&gt;
+            &lt;<span class="ty">ExtractionFields</span>
+              documentId={doc.id}
+              fields={doc.extraction?.fields ?? []}
+              docType={doc.type}
+            /&gt;
+          &lt;/<span class="ty">div</span>&gt;
+          &lt;<span class="ty">ReviewActions</span> documentId={doc.id} status={doc.status} /&gt;
+        &lt;/<span class="ty">div</span>&gt;
+
+      &lt;/<span class="ty">div</span>&gt;
+    &lt;/<span class="ty">div</span>&gt;
+  )
+}</div></div>
+
+    <div class="ftab-pane" data-pane="2"><div class="cbody"><span class="cm">// apps/web/components/document-review/ExtractionFields.tsx</span>
+<span class="str">&#39;use client&#39;</span>  <span class="cm">// Client component &mdash; owns local edit state</span>
+
+<span class="kw">import</span> { useState } <span class="kw">from</span> <span class="str">&#39;react&#39;</span>
+<span class="kw">import</span> { ConfidenceBadge } <span class="kw">from</span> <span class="str">&#39;@/components/ui/ConfidenceBadge&#39;</span>
+<span class="kw">import</span> { Input } <span class="kw">from</span> <span class="str">&#39;@/components/ui/input&#39;</span>
+<span class="kw">import</span> { cn } <span class="kw">from</span> <span class="str">&#39;@/lib/utils&#39;</span>
+<span class="kw">import type</span> { ExtractedField } <span class="kw">from</span> <span class="str">&#39;@portscope/shared&#39;</span>
+
+<span class="kw">interface</span> <span class="ty">Props</span> {
+  documentId: <span class="ty">string</span>
+  fields: <span class="ty">ExtractedField</span>[]
+  docType: <span class="ty">string</span>
+}
+
+<span class="kw">export function</span> <span class="fn">ExtractionFields</span>({ documentId, fields }: <span class="ty">Props</span>) {
+  <span class="cm">// Tracks every edit Sarah makes &mdash; sent with the approval payload</span>
+  <span class="cm">// so corrections become training data for the next fine-tune cycle</span>
+  <span class="kw">const</span> [edits, setEdits] = <span class="fn">useState</span>&lt;<span class="ty">Record</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;&gt;({})
+
+  <span class="kw">const</span> flaggedCount = fields.<span class="fn">filter</span>(f =&gt; f.confidence &lt; <span class="nu">0.85</span>).length
+
+  <span class="kw">return</span> (
+    &lt;<span class="ty">div</span> className=<span class="str">&quot;space-y-3&quot;</span>&gt;
+      &lt;<span class="ty">div</span> className=<span class="str">&quot;flex items-center justify-between mb-4&quot;</span>&gt;
+        &lt;<span class="ty">h3</span> className=<span class="str">&quot;text-sm font-semibold&quot;</span>&gt;Extracted Fields&lt;/<span class="ty">h3</span>&gt;
+        {flaggedCount &gt; <span class="nu">0</span> &amp;&amp; (
+          &lt;<span class="ty">span</span> className=<span class="str">&quot;text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-sm font-mono&quot;</span>&gt;
+            &#9888; {flaggedCount} {flaggedCount === <span class="nu">1</span> ? <span class="str">&#39;field&#39;</span> : <span class="str">&#39;fields&#39;</span>} flagged
+          &lt;/<span class="ty">span</span>&gt;
+        )}
+      &lt;/<span class="ty">div</span>&gt;
+      {fields.<span class="fn">map</span>(field =&gt; (
+        &lt;<span class="ty">FieldRow</span>
+          key={field.key}
+          field={field}
+          editedValue={edits[field.key]}
+          <span class="fn">onEdit</span>={val =&gt; <span class="fn">setEdits</span>(prev =&gt; ({ ...prev, [field.key]: val }))}
+        /&gt;
+      ))}
+    &lt;/<span class="ty">div</span>&gt;
+  )
+}
+
+<span class="kw">function</span> <span class="fn">FieldRow</span>({ field, editedValue, onEdit }: {
+  field: <span class="ty">ExtractedField</span>
+  editedValue?: <span class="ty">string</span>
+  onEdit: (val: <span class="ty">string</span>) =&gt; <span class="ty">void</span>
+}) {
+  <span class="kw">const</span> isEdited = editedValue !== <span class="kw">undefined</span> &amp;&amp; editedValue !== field.value
+  <span class="kw">const</span> needsReview = field.confidence &lt; <span class="nu">0.85</span>
+
+  <span class="kw">return</span> (
+    &lt;<span class="ty">div</span> className=<span class="str">&quot;space-y-1&quot;</span>&gt;
+      &lt;<span class="ty">div</span> className=<span class="str">&quot;flex items-center justify-between&quot;</span>&gt;
+        &lt;<span class="ty">label</span> className=<span class="str">&quot;text-xs text-muted-foreground uppercase tracking-wide font-mono&quot;</span>&gt;
+          {field.label}
+        &lt;/<span class="ty">label</span>&gt;
+        <span class="cm">{/* Confidence is always shown &mdash; never hidden. It IS the trust signal. */}</span>
+        &lt;<span class="ty">ConfidenceBadge</span> confidence={field.confidence} /&gt;
+      &lt;/<span class="ty">div</span>&gt;
+      &lt;<span class="ty">Input</span>
+        value={editedValue ?? field.value}
+        <span class="fn">onChange</span>={e =&gt; <span class="fn">onEdit</span>(e.target.value)}
+        className={<span class="fn">cn</span>(
+          <span class="str">&#39;text-sm font-mono h-8&#39;</span>,
+          needsReview &amp;&amp; !isEdited &amp;&amp; <span class="str">&#39;border-amber-300 bg-amber-50&#39;</span>,  <span class="cm">// flagged</span>
+          isEdited &amp;&amp; <span class="str">&#39;border-emerald-400 bg-emerald-50&#39;</span>                 <span class="cm">// corrected</span>
+        )}
+      /&gt;
+    &lt;/<span class="ty">div</span>&gt;
+  )
+}
+
+<span class="cm">// packages/shared/src/types/document.ts</span>
+<span class="kw">export interface</span> <span class="ty">ExtractedField</span> {
+  key: <span class="ty">string</span>          <span class="cm">// e.g. &#39;amount&#39;, &#39;due_date&#39;, &#39;aba_routing&#39;</span>
+  label: <span class="ty">string</span>        <span class="cm">// Display label</span>
+  value: <span class="ty">string</span>        <span class="cm">// Extracted value (always string for display)</span>
+  confidence: <span class="ty">number</span>   <span class="cm">// 0&ndash;1 from the VLM scorer</span>
+  fieldType: <span class="ty">&#39;money&#39; | &#39;date&#39; | &#39;text&#39; | &#39;routing_number&#39; | &#39;ein&#39;</span>
+  highlight?: {        <span class="cm">// Which PDF region this field was extracted from</span>
+    page: <span class="ty">number</span>
+    bbox: [<span class="ty">number</span>, <span class="ty">number</span>, <span class="ty">number</span>, <span class="ty">number</span>]  <span class="cm">// [x, y, w, h] normalised 0&ndash;1</span>
+  }
+}</div></div>
+
+    <div class="ftab-pane" data-pane="3"><div class="cbody"><span class="cm">// apps/web/components/ui/ConfidenceBadge.tsx</span>
+<span class="cm">// Confidence is a first-class UI concern &mdash; drives the trust model</span>
+<span class="cm">// Four threshold bands, each with distinct visual treatment</span>
+
+<span class="kw">import</span> { cn } <span class="kw">from</span> <span class="str">&#39;@/lib/utils&#39;</span>
+
+<span class="kw">interface</span> <span class="ty">Props</span> {
+  confidence: <span class="ty">number</span>    <span class="cm">// 0&ndash;1</span>
+  showLabel?: <span class="ty">boolean</span>   <span class="cm">// show text label alongside %</span>
+  size?: <span class="ty">&#39;sm&#39; | &#39;md&#39;</span>
+}
+
+<span class="kw">export function</span> <span class="fn">ConfidenceBadge</span>({
+  confidence,
+  showLabel = <span class="kw">false</span>,
+  size = <span class="str">&#39;sm&#39;</span>
+}: <span class="ty">Props</span>) {
+  <span class="kw">const</span> pct = <span class="fn">Math.round</span>(confidence * <span class="nu">100</span>)
+  <span class="kw">const</span> { bg, text, icon, label } = <span class="fn">getLevel</span>(confidence)
+
+  <span class="kw">return</span> (
+    &lt;<span class="ty">span</span> className={<span class="fn">cn</span>(
+      <span class="str">&#39;inline-flex items-center gap-0.5 rounded font-mono&#39;</span>,
+      size === <span class="str">&#39;sm&#39;</span> ? <span class="str">&#39;text-xs px-1.5 py-0.5&#39;</span> : <span class="str">&#39;text-sm px-2 py-1&#39;</span>,
+      bg, text
+    )}&gt;
+      {icon &amp;&amp; &lt;<span class="ty">span</span>&gt;{icon}&lt;/<span class="ty">span</span>&gt;}
+      {pct}%
+      {showLabel &amp;&amp; &lt;<span class="ty">span</span> className=<span class="str">&quot;ml-1 font-sans opacity-75&quot;</span>&gt;{label}&lt;/<span class="ty">span</span>&gt;}
+    &lt;/<span class="ty">span</span>&gt;
+  )
+}
+
+<span class="kw">function</span> <span class="fn">getLevel</span>(confidence: <span class="ty">number</span>) {
+  <span class="cm">// &ge;95%: high confidence, auto-approve territory &rarr; green</span>
+  <span class="kw">if</span> (confidence &gt;= <span class="nu">0.95</span>) <span class="kw">return</span> {
+    bg: <span class="str">&#39;bg-green-50&#39;</span>, text: <span class="str">&#39;text-green-700&#39;</span>,
+    icon: <span class="kw">null</span>, label: <span class="str">&#39;High&#39;</span>
+  }
+  <span class="cm">// 85&ndash;94%: acceptable confidence, shows but no action required &rarr; blue</span>
+  <span class="kw">if</span> (confidence &gt;= <span class="nu">0.85</span>) <span class="kw">return</span> {
+    bg: <span class="str">&#39;bg-blue-50&#39;</span>, text: <span class="str">&#39;text-blue-700&#39;</span>,
+    icon: <span class="kw">null</span>, label: <span class="str">&#39;Good&#39;</span>
+  }
+  <span class="cm">// 70&ndash;84%: review recommended, field editable &rarr; amber warning</span>
+  <span class="kw">if</span> (confidence &gt;= <span class="nu">0.70</span>) <span class="kw">return</span> {
+    bg: <span class="str">&#39;bg-amber-50&#39;</span>, text: <span class="str">&#39;text-amber-700&#39;</span>,
+    icon: <span class="str">&#39;&#9888;&#39;</span>, label: <span class="str">&#39;Review&#39;</span>
+  }
+  <span class="cm">// &lt;70%: low confidence, must verify before approving &rarr; red</span>
+  <span class="kw">return</span> {
+    bg: <span class="str">&#39;bg-red-50&#39;</span>, text: <span class="str">&#39;text-red-700&#39;</span>,
+    icon: <span class="str">&#39;&#10005;&#39;</span>, label: <span class="str">&#39;Must verify&#39;</span>
+  }
+}
+
+<span class="cm">// Usage examples:</span>
+<span class="cm">// &lt;ConfidenceBadge confidence={0.98} /&gt;           &rarr; green  &quot;98%&quot;</span>
+<span class="cm">// &lt;ConfidenceBadge confidence={0.88} /&gt;           &rarr; blue   &quot;88%&quot;</span>
+<span class="cm">// &lt;ConfidenceBadge confidence={0.72} /&gt;           &rarr; amber  &quot;&#9888; 72%&quot;</span>
+<span class="cm">// &lt;ConfidenceBadge confidence={0.55} /&gt;           &rarr; red    &quot;&#10005; 55%&quot;</span>
+<span class="cm">// &lt;ConfidenceBadge confidence={0.72} showLabel /&gt; &rarr; amber  &quot;&#9888; 72% Review&quot;</span></div></div>
+
+    <div class="ftab-pane" data-pane="4"><div class="cbody"><span class="cm">// apps/web/app/api/documents/[id]/approve/route.ts</span>
+<span class="cm">// Sends the Temporal approval signal &mdash; the core action of the review UI</span>
+<span class="cm">// The waiting workflow resumes immediately upon receiving this signal</span>
+
+<span class="kw">import</span> { NextResponse } <span class="kw">from</span> <span class="str">&#39;next/server&#39;</span>
+<span class="kw">import</span> { z } <span class="kw">from</span> <span class="str">&#39;zod&#39;</span>
+<span class="kw">import</span> { db } <span class="kw">from</span> <span class="str">&#39;@portscope/db&#39;</span>
+<span class="kw">import</span> { temporalClient } <span class="kw">from</span> <span class="str">&#39;@/lib/temporal&#39;</span>
+<span class="kw">import</span> { requireStaffAuth } <span class="kw">from</span> <span class="str">&#39;@/lib/auth&#39;</span>
+
+<span class="kw">const</span> <span class="ty">ApproveSchema</span> = z.<span class="fn">object</span>({
+  <span class="cm">// Corrections Sarah made in the UI: { aba_routing: &#39;021000021&#39; }</span>
+  <span class="cm">// These will be stored as training data for the next fine-tune cycle</span>
+  corrections: z.<span class="fn">record</span>(z.<span class="fn">string</span>()).<span class="fn">optional</span>().<span class="fn">default</span>({}),
+})
+
+<span class="kw">export async function</span> <span class="fn">POST</span>(
+  request: <span class="ty">Request</span>,
+  { params }: { params: { id: <span class="ty">string</span> } }
+) {
+  <span class="cm">// Auth check + multi-tenant boundary</span>
+  <span class="kw">const</span> session = <span class="kw">await</span> <span class="fn">requireStaffAuth</span>()
+  <span class="kw">const</span> { corrections } = <span class="ty">ApproveSchema</span>.<span class="fn">parse</span>(<span class="kw">await</span> request.<span class="fn">json</span>())
+
+  <span class="cm">// familyOfficeId in WHERE prevents cross-tenant access</span>
+  <span class="kw">const</span> document = <span class="kw">await</span> db.document.<span class="fn">findUniqueOrThrow</span>({
+    where: { id: params.id, familyOfficeId: session.familyOfficeId },
+  })
+
+  <span class="kw">if</span> (document.status !== <span class="str">&#39;REVIEW&#39;</span>) {
+    <span class="kw">return</span> NextResponse.<span class="fn">json</span>({ error: <span class="str">&#39;Not in review state&#39;</span> }, { status: <span class="nu">400</span> })
+  }
+
+  <span class="cm">// Signal the Temporal workflow &mdash; it has been waiting here for up to 7 days:</span>
+  <span class="cm">// await condition(() =&gt; approved, &#39;7 days&#39;)  &larr; resumes now</span>
+  <span class="kw">const</span> handle = temporalClient.<span class="fn">getHandle</span>(document.workflowId!)
+  <span class="kw">await</span> handle.<span class="fn">signal</span>(<span class="str">&#39;approval&#39;</span>, {
+    approved: <span class="kw">true</span>,
+    corrections,    <span class="cm">// Workflow stores these for training data</span>
+  })
+
+  <span class="cm">// Update UI state immediately (don&#39;t wait for workflow to process)</span>
+  <span class="kw">await</span> db.document.<span class="fn">update</span>({
+    where: { id: params.id },
+    data: {
+      status: <span class="str">&#39;APPROVED&#39;</span>,
+      reviewedBy: session.userId,
+      reviewedAt: <span class="kw">new</span> <span class="ty">Date</span>(),
+      corrections,
+    },
+  })
+
+  <span class="kw">return</span> NextResponse.<span class="fn">json</span>({ success: <span class="kw">true</span> })
+}</div></div>
+
+    <div class="ftab-pane" data-pane="5"><div class="cbody"><span class="cm">// apps/web/app/(portal)/page.tsx</span>
+<span class="cm">// James&#39;s entry point. Auth is handled entirely by middleware.</span>
+<span class="cm">// Token in URL &rarr; middleware validates &rarr; sets httpOnly session cookie</span>
+<span class="cm">// &rarr; redirects to /portal clean URL &rarr; this page renders</span>
+<span class="cm">// Result: James never sees a login page. No password. No app download.</span>
+
+<span class="kw">import</span> { getPortalOverview } <span class="kw">from</span> <span class="str">&#39;@/lib/api/portal&#39;</span>
+<span class="kw">import</span> { formatCurrency, formatDate } <span class="kw">from</span> <span class="str">&#39;@/lib/utils&#39;</span>
+<span class="kw">import</span> { ReportDownloadCard } <span class="kw">from</span> <span class="str">&#39;@/components/portal/ReportDownloadCard&#39;</span>
+
+<span class="kw">export default async function</span> <span class="fn">PortalOverviewPage</span>() {
+  <span class="kw">const</span> data = <span class="kw">await</span> <span class="fn">getPortalOverview</span>()  <span class="cm">// session set by middleware</span>
+
+  <span class="kw">return</span> (
+    &lt;<span class="ty">div</span> className=<span class="str">&quot;min-h-screen bg-[#111827] text-white&quot;</span>&gt;
+      &lt;<span class="ty">header</span> className=<span class="str">&quot;border-b border-white/10 px-6 py-4 flex justify-between items-center&quot;</span>&gt;
+        &lt;<span class="ty">span</span> className=<span class="str">&quot;font-mono text-xs tracking-widest text-white/40&quot;</span>&gt;PORTSCOPE&lt;/<span class="ty">span</span>&gt;
+        &lt;<span class="ty">span</span> className=<span class="str">&quot;text-sm font-medium&quot;</span>&gt;{data.familyOfficeName}&lt;/<span class="ty">span</span>&gt;
+      &lt;/<span class="ty">header</span>&gt;
+
+      &lt;<span class="ty">main</span> className=<span class="str">&quot;max-w-2xl mx-auto px-6 py-10&quot;</span>&gt;
+
+        <span class="cm">{/* Net worth &mdash; the most important number, shown largest */}</span>
+        &lt;<span class="ty">section</span> className=<span class="str">&quot;mb-8&quot;</span>&gt;
+          &lt;<span class="ty">p</span> className=<span class="str">&quot;text-xs font-mono uppercase tracking-widest text-white/40 mb-2&quot;</span>&gt;
+            Total Portfolio Value &middot; As of {<span class="fn">formatDate</span>(data.asOf)}
+          &lt;/<span class="ty">p</span>&gt;
+          &lt;<span class="ty">p</span> className=<span class="str">&quot;text-5xl font-light tracking-tight&quot;</span>&gt;
+            {<span class="fn">formatCurrency</span>(data.netWorth)}
+          &lt;/<span class="ty">p</span>&gt;
+          &lt;<span class="ty">p</span> className={data.delta &gt;= <span class="nu">0</span> ? <span class="str">&#39;text-emerald-400 text-sm mt-2&#39;</span> : <span class="str">&#39;text-red-400 text-sm mt-2&#39;</span>}&gt;
+            {data.delta &gt;= <span class="nu">0</span> ? <span class="str">&#39;&uarr;&#39;</span> : <span class="str">&#39;&darr;&#39;</span>} {<span class="fn">formatCurrency</span>(<span class="fn">Math.abs</span>(data.delta))}
+            &nbsp;({data.deltaPercent.<span class="fn">toFixed</span>(<span class="nu">1</span>)}%) from last quarter
+          &lt;/<span class="ty">p</span>&gt;
+        &lt;/<span class="ty">section</span>&gt;
+
+        <span class="cm">{/* Four stats &mdash; answers every question James could have */}</span>
+        &lt;<span class="ty">section</span> className=<span class="str">&quot;grid grid-cols-2 gap-3 mb-8&quot;</span>&gt;
+          {[
+            { label: <span class="str">&#39;Alternatives (NAV)&#39;</span>, value: <span class="fn">formatCurrency</span>(data.altsNav) },
+            { label: <span class="str">&#39;Liquid Portfolio&#39;</span>, value: <span class="fn">formatCurrency</span>(data.liquidValue) },
+            { label: `Distributions (${data.quarterLabel})`, value: <span class="fn">formatCurrency</span>(data.distributions) },
+            {
+              label: <span class="str">&#39;Next Capital Call&#39;</span>,
+              value: data.nextCall
+                ? `${<span class="fn">formatCurrency</span>(data.nextCall.amount)} &middot; ${<span class="fn">formatDate</span>(data.nextCall.dueDate)}`
+                : <span class="str">&#39;None scheduled&#39;</span>,
+              urgent: !!data.nextCall,
+            },
+          ].<span class="fn">map</span>(stat =&gt; (
+            &lt;<span class="ty">div</span> key={stat.label} className=<span class="str">&quot;bg-white/5 rounded-lg p-4 border border-white/10&quot;</span>&gt;
+              &lt;<span class="ty">p</span> className=<span class="str">&quot;text-xs text-white/40 mb-1&quot;</span>&gt;{stat.label}&lt;/<span class="ty">p</span>&gt;
+              &lt;<span class="ty">p</span> className={stat.urgent ? <span class="str">&#39;font-mono text-amber-400&#39;</span> : <span class="str">&#39;font-mono&#39;</span>}&gt;
+                {stat.value}
+              &lt;/<span class="ty">p</span>&gt;
+            &lt;/<span class="ty">div</span>&gt;
+          ))}
+        &lt;/<span class="ty">section</span>&gt;
+
+        <span class="cm">{/* Primary CTA &mdash; what James came for. Make it the biggest thing on screen. */}</span>
+        {data.latestReport &amp;&amp; &lt;<span class="ty">ReportDownloadCard</span> report={data.latestReport} /&gt;}
+
+      &lt;/<span class="ty">main</span>&gt;
+    &lt;/<span class="ty">div</span>&gt;
+  )
+}
+
+<span class="cm">// middleware.ts &mdash; magic link validation (runs at edge, before any page renders)</span>
+<span class="kw">export async function</span> <span class="fn">middleware</span>(request: <span class="ty">NextRequest</span>) {
+  <span class="kw">if</span> (request.nextUrl.pathname.<span class="fn">startsWith</span>(<span class="str">&#39;/portal&#39;</span>)) {
+    <span class="kw">const</span> token = request.nextUrl.searchParams.<span class="fn">get</span>(<span class="str">&#39;token&#39;</span>)
+    <span class="kw">if</span> (token) {
+      <span class="kw">const</span> session = <span class="kw">await</span> <span class="fn">validateMagicLink</span>(token)   <span class="cm">// checks DB, expiry</span>
+      <span class="kw">if</span> (session) {
+        <span class="kw">const</span> res = NextResponse.<span class="fn">redirect</span>(<span class="kw">new</span> <span class="ty">URL</span>(<span class="str">&#39;/portal&#39;</span>, request.url))
+        res.cookies.<span class="fn">set</span>(<span class="str">&#39;ps-portal-session&#39;</span>, session.token, {
+          httpOnly: <span class="kw">true</span>, secure: <span class="kw">true</span>, sameSite: <span class="str">&#39;lax&#39;</span>,
+          maxAge: <span class="nu">60</span> * <span class="nu">60</span> * <span class="nu">24</span> * <span class="nu">7</span>   <span class="cm">// 7 days</span>
+        })
+        <span class="kw">return</span> res
+      }
+    }
+  }
+}</div></div>
+
+    <div class="ftab-pane" data-pane="6"><div class="cbody"><span class="cm">// apps/worker/src/workflows/ingest.workflow.ts</span>
+<span class="cm">// The master pipeline &mdash; durable, crash-safe, retries automatically</span>
+<span class="cm">// Temporal persists workflow state to DB. Safe to crash the container mid-workflow.</span>
+
+<span class="kw">import</span> {
+  proxyActivities, condition, setHandler, defineSignal, log
+} <span class="kw">from</span> <span class="str">&#39;@temporalio/workflow&#39;</span>
+<span class="kw">import type</span> * <span class="kw">as</span> activities <span class="kw">from</span> <span class="str">&#39;../activities&#39;</span>
+
+<span class="kw">const</span> {
+  classifyDocument, extractDocument, storeExtraction,
+  notifyReview, persistCapitalEvents, storeCorrectionsForTraining,
+} = <span class="fn">proxyActivities</span>&lt;<span class="kw">typeof</span> activities&gt;({
+  startToCloseTimeout: <span class="str">&#39;5 minutes&#39;</span>,
+  retry: { maximumAttempts: <span class="nu">3</span>, initialInterval: <span class="str">&#39;30s&#39;</span>, backoffCoefficient: <span class="nu">2</span> },
+})
+
+<span class="cm">// Signal sent by the Next.js API route when Sarah clicks Approve</span>
+<span class="kw">export const</span> approvalSignal = <span class="fn">defineSignal</span>&lt;[{
+  approved: <span class="ty">boolean</span>
+  corrections: <span class="ty">Record</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+}]&gt;(<span class="str">&#39;approval&#39;</span>)
+
+<span class="kw">export async function</span> <span class="fn">ingestDocumentWorkflow</span>(input: {
+  documentId: <span class="ty">string</span>
+  s3Key: <span class="ty">string</span>
+  familyOfficeId: <span class="ty">string</span>
+}): <span class="ty">Promise</span>&lt;<span class="ty">void</span>&gt; {
+
+  <span class="cm">// Step 1: classify &mdash; CAPITAL_CALL | DISTRIBUTION | NAV_STATEMENT | K1 | FUND_REPORT</span>
+  <span class="kw">const</span> docType = <span class="kw">await</span> <span class="fn">classifyDocument</span>({ s3Key: input.s3Key })
+  log.<span class="fn">info</span>(<span class="str">&#39;classified&#39;</span>, { docType, documentId: input.documentId })
+
+  <span class="cm">// Step 2: extract &mdash; calls Python extractor via HTTP (LLM_PROVIDER configures backend)</span>
+  <span class="kw">const</span> extraction = <span class="kw">await</span> <span class="fn">extractDocument</span>({ s3Key: input.s3Key, docType })
+
+  <span class="cm">// Step 3: gate on confidence &mdash; any field below 85% requires human review</span>
+  <span class="kw">const</span> needsReview = extraction.fields.<span class="fn">some</span>(f =&gt; f.confidence &lt; <span class="nu">0.85</span>)
+
+  <span class="kw">let</span> corrections: <span class="ty">Record</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt; = {}
+
+  <span class="kw">if</span> (needsReview) {
+    <span class="cm">// Notify Sarah, add to review queue</span>
+    <span class="kw">await</span> <span class="fn">notifyReview</span>({ documentId: input.documentId, extraction, docType })
+
+    <span class="cm">// PAUSE HERE. Temporal persists all state to its database.</span>
+    <span class="cm">// The workflow will resume exactly at this point when the signal arrives.</span>
+    <span class="cm">// ECS container can crash, restart &mdash; workflow is unaffected.</span>
+    <span class="kw">let</span> approved = <span class="kw">false</span>
+    <span class="fn">setHandler</span>(approvalSignal, payload =&gt; {
+      approved = payload.approved
+      corrections = payload.corrections
+    })
+
+    <span class="kw">const</span> didSignal = <span class="kw">await</span> <span class="fn">condition</span>(() =&gt; approved, <span class="str">&#39;7 days&#39;</span>)
+    <span class="kw">if</span> (!didSignal) {
+      <span class="kw">throw new</span> <span class="ty">Error</span>(<span class="str">&#39;Review timed out &mdash; escalating to DLQ&#39;</span>)
+    }
+
+    <span class="cm">// Store Sarah&#39;s corrections as fine-tuning training data</span>
+    <span class="kw">if</span> (Object.<span class="fn">keys</span>(corrections).length &gt; <span class="nu">0</span>) {
+      <span class="kw">await</span> <span class="fn">storeCorrectionsForTraining</span>({ documentId: input.documentId, corrections })
+    }
+  }
+
+  <span class="cm">// Step 4: persist to DB (merging corrections into the extraction record)</span>
+  <span class="kw">await</span> <span class="fn">storeExtraction</span>({ documentId: input.documentId, extraction, docType, corrections })
+
+  <span class="cm">// Step 5: if capital event, create CapitalEvent record for portfolio tracking</span>
+  <span class="kw">if</span> ([<span class="str">&#39;CAPITAL_CALL&#39;</span>, <span class="str">&#39;DISTRIBUTION&#39;</span>].<span class="fn">includes</span>(docType)) {
+    <span class="kw">await</span> <span class="fn">persistCapitalEvents</span>({ documentId: input.documentId, extraction })
+  }
+}</div></div>
+  </div>
+
+  <div class="co co-b" style="margin-top:1rem">
+    <span class="cl">Why corrections become training data</span>
+    <strong>Every field Sarah corrects is stored in the training dataset.</strong> Monthly fine-tune cycles (or prompt improvements) ingest all corrections from the past period via LoRA. The model improves automatically as you process more documents. By month 3, auto-approval rates typically exceed 92% &mdash; meaning Sarah spends less than 2 minutes per week on document review.
+  </div>
+</div>
+<!-- 10 LLM PROVIDERS + STACK -->
+<div class="sband"><b>10</b> LLM Providers &amp; Technology Stack</div>
+<div class="sec" id="oss">
+  <div class="ey">Provider-agnostic extraction &mdash; swap via env var</div>
+  <h2 class="st">Seven LLM backends. <em>One environment variable.</em></h2>
+  <p class="si">The extractor&rsquo;s <code style="font-family:var(--mono);color:var(--teal2)">providers.py</code> abstracts all LLM calls behind a single interface. Start free with Ollama locally. Upgrade to Claude when you need better accuracy on complex tables. No code changes required.</p>
+
+  <table class="tbl" style="font-size:12.5px">
+    <thead><tr><th>Provider</th><th>LLM_PROVIDER</th><th>Required Env</th><th>Cost</th><th>Best for</th></tr></thead>
+    <tbody>
+      <tr><td><strong style="color:var(--white)">Ollama</strong> &mdash; default</td><td><code style="font-family:var(--mono);color:var(--teal2)">ollama</code></td><td><code style="font-family:var(--mono);color:var(--text2)">LLM_MODEL</code></td><td class="good">Free</td><td>Local dev, no GPU needed</td></tr>
+      <tr><td><strong style="color:var(--white)">OpenRouter</strong></td><td><code style="font-family:var(--mono);color:var(--teal2)">openrouter</code></td><td><code style="font-family:var(--mono);color:var(--text2)">LLM_API_KEY, LLM_MODEL</code></td><td class="warn">Pay-per-use</td><td>100+ models, no GPU</td></tr>
+      <tr><td><strong style="color:var(--white)">Anthropic</strong></td><td><code style="font-family:var(--mono);color:var(--teal2)">anthropic</code></td><td><code style="font-family:var(--mono);color:var(--text2)">ANTHROPIC_API_KEY</code></td><td class="warn">Paid</td><td>Best accuracy for complex docs</td></tr>
+      <tr><td><strong style="color:var(--white)">OpenAI</strong></td><td><code style="font-family:var(--mono);color:var(--teal2)">openai</code></td><td><code style="font-family:var(--mono);color:var(--text2)">LLM_API_KEY, LLM_MODEL</code></td><td class="warn">Paid</td><td>GPT-4o vision for scanned PDFs</td></tr>
+      <tr><td><strong style="color:var(--white)">HuggingFace</strong></td><td><code style="font-family:var(--mono);color:var(--teal2)">huggingface</code></td><td><code style="font-family:var(--mono);color:var(--text2)">LLM_API_KEY, LLM_MODEL</code></td><td class="good">Free tier</td><td>Open models, no local GPU</td></tr>
+      <tr><td><strong style="color:var(--white)">vLLM</strong></td><td><code style="font-family:var(--mono);color:var(--teal2)">vllm</code></td><td><code style="font-family:var(--mono);color:var(--text2)">LLM_BASE_URL, LLM_MODEL</code></td><td class="good">Self-hosted</td><td>When you do have a GPU later</td></tr>
+      <tr><td><strong style="color:var(--white)">Custom</strong></td><td><code style="font-family:var(--mono);color:var(--teal2)">custom</code></td><td><code style="font-family:var(--mono);color:var(--text2)">LLM_BASE_URL, LLM_API_KEY, LLM_MODEL</code></td><td>&mdash;</td><td>Any OpenAI-compatible endpoint</td></tr>
+    </tbody>
+  </table>
+
+  <div class="cb">
+    <div class="cb-top"><span class="cb-f">providers.py &mdash; architecture</span><span class="cb-l">apps/extractor/src/models/providers.py</span></div>
+    <div class="cbody"><span class="cm"># ABC base class &mdash; one method, one contract</span>
+<span class="kw">class</span> <span class="ty">LLMProvider</span>(ABC):
+    <span class="kw">async def</span> <span class="fn">chat</span>(self, prompt: <span class="ty">str</span>, max_tokens: <span class="ty">int</span>) -&gt; <span class="ty">str</span>: ...
+
+<span class="cm"># Two concrete implementations cover all 7 providers</span>
+<span class="kw">class</span> <span class="ty">AnthropicProvider</span>(<span class="ty">LLMProvider</span>):     <span class="cm"># Native Anthropic SDK</span>
+<span class="kw">class</span> <span class="ty">OpenAICompatibleProvider</span>(<span class="ty">LLMProvider</span>): <span class="cm"># Ollama / OpenRouter / HF / vLLM / OpenAI</span>
+
+<span class="cm"># Factory: reads LLM_PROVIDER env var, returns the right provider</span>
+<span class="kw">def</span> <span class="fn">get_provider</span>() -&gt; <span class="ty">LLMProvider</span>:
+    provider = os.<span class="fn">getenv</span>(<span class="str">"LLM_PROVIDER"</span>, <span class="str">"ollama"</span>)
+    <span class="kw">if</span> provider == <span class="str">"anthropic"</span>:   <span class="kw">return</span> <span class="ty">AnthropicProvider</span>()
+    <span class="kw">if</span> provider == <span class="str">"openrouter"</span>: <span class="kw">return</span> <span class="ty">OpenAICompatibleProvider</span>(base_url=<span class="str">"https://openrouter.ai/api/v1"</span>)
+    <span class="kw">if</span> provider == <span class="str">"ollama"</span>:     <span class="kw">return</span> <span class="ty">OpenAICompatibleProvider</span>(base_url=<span class="str">"http://localhost:11434/v1"</span>)
+    <span class="cm"># ... huggingface, openai, vllm, custom ...</span></div>
+  </div>
+
+  <div class="g3" style="margin-top:1.5rem">
+    <div class="card">
+      <div class="ctag tg">Dev setup &mdash; free</div>
+      <h4>Ollama locally</h4>
+      <p style="font-family:var(--mono);font-size:11px;color:var(--teal2);line-height:1.9">LLM_PROVIDER=ollama<br>LLM_MODEL=llama3.1:8b<br># ollama pull llama3.1:8b</p>
+    </div>
+    <div class="card">
+      <div class="ctag tt">No GPU needed</div>
+      <h4>OpenRouter</h4>
+      <p style="font-family:var(--mono);font-size:11px;color:var(--teal2);line-height:1.9">LLM_PROVIDER=openrouter<br>LLM_API_KEY=sk-or-v1-...<br>LLM_MODEL=anthropic/claude-3.5-sonnet</p>
+    </div>
+    <div class="card">
+      <div class="ctag tb">Best accuracy</div>
+      <h4>Direct Anthropic</h4>
+      <p style="font-family:var(--mono);font-size:11px;color:var(--teal2);line-height:1.9">LLM_PROVIDER=anthropic<br>ANTHROPIC_API_KEY=sk-ant-...<br># uses claude-3-5-sonnet by default</p>
+    </div>
+  </div>
+
+  <div style="margin-top:2rem">
+    <div class="reph">&#9670; Core technology stack</div>
+    <div class="g2">
+      <div>
+        <div class="oss"><div class="oss-h"><span class="oss-n">pdfplumber</span><span class="oss-l">pip install pdfplumber</span></div><div class="oss-b"><div class="oss-d">Primary PDF parser. Extracts clean text and table data for feeding to the LLM prompt. Reliable on digitally-created PDFs (the vast majority of capital call notices). <code style="font-family:var(--mono);color:var(--teal2)">pdfplumber.open()</code> &rarr; <code style="font-family:var(--mono);color:var(--teal2)">page.extract_text()</code>.</div></div></div>
+        <div class="oss"><div class="oss-h"><span class="oss-n">temporalio/sdk-typescript</span><span class="oss-l">pnpm add @temporalio/workflow</span></div><div class="oss-b"><div class="oss-d">Durable workflow orchestration. The ingest pipeline is a Temporal workflow. Handles retries, 7-day human review waits, and crash recovery. Workflow state persists to PostgreSQL.</div></div></div>
+        <div class="oss"><div class="oss-h"><span class="oss-n">MinIO</span><span class="oss-l">Docker Compose (dev) / S3 API (prod)</span></div><div class="oss-b"><div class="oss-d">S3-compatible object storage. Runs locally via Docker Compose &mdash; no AWS account for development. Swap four env vars to point at real S3, R2, or DigitalOcean Spaces in production.</div></div></div>
+      </div>
+      <div>
+        <div class="oss"><div class="oss-h"><span class="oss-n">NestJS 10</span><span class="oss-l">pnpm add @nestjs/core</span></div><div class="oss-b"><div class="oss-d">REST API with modules for documents, entities, portfolio, reporting, auth, storage. Global PrismaService. Background processing (upload &rarr; extract) runs async without blocking the HTTP response.</div></div></div>
+        <div class="oss"><div class="oss-h"><span class="oss-n">Next.js 15 + Tailwind CSS v4</span><span class="oss-l">pnpm create next-app</span></div><div class="oss-b"><div class="oss-d">App Router with client components for the review queue (10-second polling) and document review page. shadcn/ui primitives. DM Sans + Cormorant Garamond + JetBrains Mono.</div></div></div>
+        <div class="oss"><div class="oss-h"><span class="oss-n">Prisma 6 + PostgreSQL 16 + pgvector</span><span class="oss-l">pnpm add prisma</span></div><div class="oss-b"><div class="oss-d">12-model schema: FamilyOffice, User, Entity, Fund, Holding, CapitalEvent, Document, DocumentChunk, Report. pgvector extension for future RAG queries on document chunks.</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 11 SPRINT PLAN -->
+<div class="sband"><b>11</b> 12-Week Sprint Plan</div>
+<div class="sec" id="sprints">
+  <div class="ey">MVP Roadmap</div>
+  <h2 class="st">12 weeks to a <em>working autopilot</em></h2>
+  <p class="si">Each sprint ends with something you can demo live to a prospect. Not a mockup &mdash; a real document going in and a real result coming out. Don&rsquo;t move to the next sprint until the current demo works end-to-end.</p>
+
+  <div class="sprint">
+    <div class="sp-num"><span class="sp-wk">Weeks</span><span class="sp-n">1&ndash;2</span></div>
+    <div class="sp-c">
+      <h4>Extraction Baseline &mdash; the only demo that matters first</h4>
+      <p>Feed a real capital call PDF into the extractor and get structured JSON with confidence scores. Do not move on until this hits 90%+ field-level accuracy on 5 different real capital call PDFs.</p>
+      <div class="task">Init <strong>pnpm monorepo + Turborepo</strong>. Create apps/api, apps/extractor, apps/worker, packages/db, packages/shared.</div>
+      <div class="task">Set up <strong>Ollama</strong>: <code style="font-family:var(--mono);color:var(--teal2)">ollama pull llama3.1:8b</code>. Start FastAPI extractor on port 8001 with <code style="font-family:var(--mono);color:var(--teal2)">LLM_PROVIDER=ollama</code>.</div>
+      <div class="task">Build <strong>apps/extractor FastAPI</strong>: <code style="font-family:var(--mono);color:var(--teal2)">POST /classify</code> + <code style="font-family:var(--mono);color:var(--teal2)">POST /extract</code>. Docling parses PDF &rarr; VLM extracts fields.</div>
+      <div class="task">Define <strong>Pydantic schemas</strong> for capital_call + distribution. Each field: <code style="font-family:var(--mono);color:var(--teal2)">{ value: Any, confidence: float }</code>.</div>
+      <div class="task">Stand up <strong>docker-compose.yml</strong>: PostgreSQL 16, Temporal server, Redis. One command local dev.</div>
+    </div>
+  </div>
+
+  <div class="sprint">
+    <div class="sp-num"><span class="sp-wk">Weeks</span><span class="sp-n">3&ndash;4</span></div>
+    <div class="sp-c">
+      <h4>Fine-tuning Dataset + Temporal Ingest Pipeline</h4>
+      <p>Label 100 real documents in Label Studio. Fine-tune 72B weights to push accuracy above 95%. Wire the Temporal ingestion workflow end-to-end.</p>
+      <div class="task">Stand up <strong>Label Studio</strong>. Create annotation schema matching Pydantic schemas. Label 100 capital call PDFs with ground-truth field values.</div>
+      <div class="task">Run <strong>LoRA test accuracy</strong> across 5 real capital call PDFs; adjust LLM prompt. Target: &gt;95% field-level F1 on held-out test set of 20 docs.</div>
+      <div class="task">Build <strong>Temporal ingest.workflow.ts</strong>: classify &rarr; extract &rarr; confidence gate &rarr; notify review or auto-approve &rarr; persist.</div>
+      <div class="task">Define <strong>Prisma schema</strong> (adapted from Ghostfolio): Entity, Fund, Holding, CapitalEvent, Document, DocumentExtractionChunk.</div>
+    </div>
+  </div>
+
+  <div class="sprint">
+    <div class="sp-num"><span class="sp-wk">Weeks</span><span class="sp-n">5&ndash;6</span></div>
+    <div class="sp-c">
+      <h4>Review UI + Email Ingestion &mdash; Magic Moment 1 sprint</h4>
+      <p>Build Sarah&rsquo;s review interface and wire SES email ingestion. End of sprint goal: forward a capital call email &rarr; it appears in the queue automatically.</p>
+      <div class="task">Build <strong>apps/web review interface</strong>: <code style="font-family:var(--mono);color:var(--teal2)">/review</code> queue page + <code style="font-family:var(--mono);color:var(--teal2)">/review/documents/[id]</code> side-by-side review with PDF viewer + extracted fields.</div>
+      <div class="task">Configure <strong>AWS SES inbound</strong>: rule &rarr; Lambda &rarr; S3 upload &rarr; SQS message &rarr; Temporal workflow starts. Set up <strong>Tailscale</strong> DGX &#8646; AWS VPN.</div>
+      <div class="task">Deploy <strong>apps/web to Vercel</strong>. Set up GitHub integration, environment variables (NEXT_PUBLIC_API_URL, AUTH_SECRET, DATABASE_URL).</div>
+    </div>
+  </div>
+
+  <div class="sprint">
+    <div class="sp-num"><span class="sp-wk">Weeks</span><span class="sp-n">7&ndash;8</span></div>
+    <div class="sp-c">
+      <h4>Portfolio Analytics + Monthly Reconciliation</h4>
+      <p>Aggregate extracted data into a coherent portfolio view. IRR, TVPI, exposure analysis. Monthly reconciliation workflow with mismatch detection.</p>
+      <div class="task">Build <strong>portfolio.service.ts</strong>: aggregate CapitalEvents &rarr; compute IRR/TVPI/DPI via Python Lambda (FinQuant). Return JSON to NestJS API.</div>
+      <div class="task">Build <strong>exposure analyzer</strong>: roll up positions by asset class, geography, currency. Flag concentration (&gt;30% single manager or strategy).</div>
+      <div class="task">Build <strong>reconcile.workflow.ts</strong>: monthly Temporal cron. Compare extracted capital events vs custodian CSV statements. Flag any mismatches for Sarah&rsquo;s review.</div>
+    </div>
+  </div>
+
+  <div class="sprint">
+    <div class="sp-num"><span class="sp-wk">Weeks</span><span class="sp-n">9&ndash;10</span></div>
+    <div class="sp-c">
+      <h4>Quarterly Close + Client Portal &mdash; Magic Moment 2 sprint</h4>
+      <p>Build the full quarterly close workflow and the client-facing portal. By end of sprint: complete end-to-end from Temporal cron &rarr; PDF report &rarr; James&rsquo;s magic link.</p>
+      <div class="task">Build <strong>report.workflow.ts</strong>: quarterly Temporal cron &rarr; run analytics &rarr; PDF (Puppeteer Lambda) &rarr; draft to Sarah &rarr; on approval &rarr; deliver to all family contacts.</div>
+      <div class="task">Build <strong>client portal</strong>: net worth overview, fund list, report download. Magic link auth via Auth.js v5 + Next.js middleware. No password, 7-day session.</div>
+      <div class="task">Build <strong>delivery email</strong> with react-email: narrative summary + PDF attachment + magic link. The email IS the product for James.</div>
+    </div>
+  </div>
+
+  <div class="sprint">
+    <div class="sp-num"><span class="sp-wk">Weeks</span><span class="sp-n">11&ndash;12</span></div>
+    <div class="sp-c">
+      <h4>AI Analyst + Production Hardening + First Pilot Client</h4>
+      <p>RAG-based AI analyst for Sarah. Deploy full AWS CDK stacks. Onboard first real client with white-glove setup and live demo extraction.</p>
+      <div class="task">Build <strong>RAG service</strong>: LlamaIndex + pgvector + local hosted LLM via OpenRouter or local Ollama. <code style="font-family:var(--mono);color:var(--teal2)">POST /analyst/query</code> returns answer + source citations from document chunks.</div>
+      <div class="task">Deploy <strong>AWS CDK stacks</strong> to production: <code style="font-family:var(--mono);color:var(--teal2)">cdk deploy --all</code>. All six stacks: network, database, storage, api, worker, email.</div>
+      <div class="task">Observability: <strong>CloudWatch</strong> for ECS logs, <strong>Sentry</strong> for errors, <strong>Temporal UI</strong> for workflow monitoring, SNS alerts on DLQ hits.</div>
+      <div class="task"><strong>Onboard first pilot client</strong>: you do the entity setup. Live 30-min demo: forward email &rarr; queue fills &rarr; Sarah approves &rarr; capital event written. Ask for the referral at quarter end.</div>
+    </div>
+  </div>
+</div>
+<!-- 11b HOW TO START -->
+<div class="sband"><b>11b</b> How to Start</div>
+<div class="sec" id="howtostart">
+  <div class="ey">Local development &mdash; three paths</div>
+  <h2 class="st">Running in under <em>10 minutes</em></h2>
+  <p class="si">Option 1 requires nothing but Node and pnpm. Option 2 adds the full backend. Option 3 swaps in a cloud LLM if you don&rsquo;t want to run Ollama.</p>
+
+  <div class="g3" style="margin-bottom:1.5rem">
+    <div class="card" style="border-color:rgba(40,160,132,.3)">
+      <div class="ctag tt">Option 1 &mdash; fastest</div>
+      <h4>Frontend only &mdash; no backend</h4>
+      <p>UI with mock data. No Docker, no Python, no database.</p>
+    </div>
+    <div class="card" style="border-color:rgba(196,154,56,.3)">
+      <div class="ctag tg">Option 2 &mdash; recommended</div>
+      <h4>Full stack + Ollama</h4>
+      <p>Docker Compose + Ollama running llama3.1:8b locally. Free, no API keys.</p>
+    </div>
+    <div class="card">
+      <div class="ctag tb">Option 3 &mdash; no local GPU</div>
+      <h4>Full stack + OpenRouter</h4>
+      <p>Same as Option 2 but routes LLM calls to Claude/GPT via OpenRouter.</p>
+    </div>
+  </div>
+
+  <div class="cb">
+    <div class="cb-top"><span class="cb-f">Option 1 &mdash; Web UI only</span><span class="cb-l">no backend required</span></div>
+    <div class="cbody">cd portscope-dev
+pnpm install
+pnpm --filter @portscope/web dev
+<span class="cm"># Open http://localhost:3000/queue</span></div>
+  </div>
+
+  <div class="cb">
+    <div class="cb-top"><span class="cb-f">Option 2 &mdash; Full stack with Ollama (free, local AI)</span><span class="cb-l">Prerequisites: Docker, Node 20+, pnpm 9+, Python 3.11+, Ollama</span></div>
+    <div class="cbody"><span class="cm"># 1. Start infrastructure (PostgreSQL, Temporal, Redis, MinIO)</span>
+docker compose up -d
+
+<span class="cm"># 2. Database setup</span>
+pnpm install
+cd packages/db
+npx prisma generate && npx prisma db push
+cd ../..
+
+<span class="cm"># 3. Start extractor with Ollama (new terminal)</span>
+cd apps/extractor
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+ollama pull llama3.1:8b
+<span class="cd">LLM_PROVIDER</span>=ollama uvicorn src.api.main:app --port <span class="nu">8001</span> --reload
+
+<span class="cm"># 4. Start web + API (new terminal)</span>
+pnpm dev
+
+<span class="cm"># 5. Open in browser</span>
+<span class="cm"># Staff queue:    http://localhost:3000/queue</span>
+<span class="cm"># Client portal: http://localhost:3000/portal</span>
+<span class="cm"># Extractor docs: http://localhost:8001/docs   (Swagger UI)</span>
+<span class="cm"># Temporal UI:    http://localhost:8080</span>
+<span class="cm"># MinIO console:  http://localhost:9001   (minioadmin / minioadmin)</span></div>
+  </div>
+
+  <div class="cb">
+    <div class="cb-top"><span class="cb-f">Option 3 &mdash; OpenRouter (no local GPU needed)</span><span class="cb-l">set in .env then follow Option 2</span></div>
+    <div class="cbody"><span class="cm"># In .env at project root:</span>
+<span class="cd">LLM_PROVIDER</span>=openrouter
+<span class="cd">LLM_API_KEY</span>=sk-or-v1-your-key
+<span class="cd">LLM_MODEL</span>=anthropic/claude-3.5-sonnet
+
+<span class="cm"># Then follow Option 2 steps above (skip: ollama pull llama3.1:8b)</span></div>
+  </div>
+
+  <div class="co co-t" style="margin-top:1rem">
+    <span class="cl">Auto-seed data</span>
+    The API auto-seeds dev data on startup: <strong>Whitmore Family Office</strong>, Sarah Chen (staff) and James Whitmore III (client), 3 entities, 3 funds (Blackstone RE IX, KKR Americas XII, Apollo Credit VIII), 3 holdings, 2 capital events ($847K pending call, $1.24M completed distribution), 3 documents in various review states, and 1 delivered Q1 2026 report. No manual data entry needed.
+  </div>
+</div>
+
+<!-- 11c IMPLEMENTATION STATUS -->
+<div class="sband"><b>11c</b> Implementation Status</div>
+<div class="sec" id="status">
+  <div class="ey">What&rsquo;s built &mdash; April 2026</div>
+  <h2 class="st">Current state of <em>the codebase</em></h2>
+  <p class="si">The core extraction pipeline, review UI, and client portal are fully wired to live APIs. Temporal workflows are scaffolded. Email delivery and full JWT auth are pending.</p>
+
+  <table class="tbl" style="font-size:12.5px">
+    <thead><tr><th>Component</th><th>Status</th><th>Details</th></tr></thead>
+    <tbody>
+      <tr><td class="em">Monorepo scaffold</td><td class="good">&#10003; Done</td><td>pnpm workspaces, Turborepo, tsconfigs, shared packages</td></tr>
+      <tr><td class="em">Docker Compose</td><td class="good">&#10003; Done</td><td>PostgreSQL 16, Temporal 1.25, Redis 7, MinIO &mdash; one command</td></tr>
+      <tr><td class="em">Prisma schema</td><td class="good">&#10003; Done</td><td>262 lines, 12 models, all relations + pgvector extension</td></tr>
+      <tr><td class="em">LLM provider system</td><td class="good">&#10003; Done</td><td>7 providers: Ollama, OpenRouter, HuggingFace, Anthropic, OpenAI, vLLM, custom</td></tr>
+      <tr><td class="em">Extractor API</td><td class="good">&#10003; Done</td><td>/classify, /extract, /upload, /process endpoints with Swagger UI</td></tr>
+      <tr><td class="em">MinIO / S3 integration</td><td class="good">&#10003; Done</td><td>Upload, download, presigned URLs via boto3</td></tr>
+      <tr><td class="em">PDF text extraction</td><td class="good">&#10003; Done</td><td>pdfplumber with S3 download &rarr; local file &rarr; placeholder fallbacks</td></tr>
+      <tr><td class="em">Confidence scoring</td><td class="good">&#10003; Done</td><td>4-tier system with heuristic validators (money, date, routing, EIN, %)</td></tr>
+      <tr><td class="em">NestJS API</td><td class="good">&#10003; Done</td><td>Documents, entities, portfolio, reporting modules wired to Prisma</td></tr>
+      <tr><td class="em">Upload &rarr; process flow</td><td class="good">&#10003; Done</td><td>Upload &rarr; S3 &rarr; background classify/extract &rarr; DB update (async)</td></tr>
+      <tr><td class="em">Dev seed data</td><td class="good">&#10003; Done</td><td>Full family office, entities, funds, holdings, documents, report on startup</td></tr>
+      <tr><td class="em">Review queue UI</td><td class="good">&#10003; Wired</td><td>Live API fetch, upload widget, 10-second polling, loading/error states</td></tr>
+      <tr><td class="em">Document review UI</td><td class="good">&#10003; Wired</td><td>Fetches from API by params.id, approve/flag wired to real endpoints</td></tr>
+      <tr><td class="em">Client portal UI</td><td class="good">&#10003; Wired</td><td>Fetches from reporting API, formats real data with correct number display</td></tr>
+      <tr><td class="em">PDF viewer</td><td class="good">&#10003; Done</td><td>iframe with presigned MinIO URL; placeholder fallback when no file</td></tr>
+      <tr><td class="em">Temporal workflow</td><td class="warn">&#9711; Scaffold</td><td>Workflow + activities defined; not yet triggered from API upload flow</td></tr>
+      <tr><td class="em">Email notifications</td><td class="bad">&#9675; Pending</td><td>notifyReview activity is a stub &mdash; no email sent yet</td></tr>
+      <tr><td class="em">Real JWT auth</td><td class="bad">&#9675; Pending</td><td>Dev bypass (<code style="font-family:var(--mono)">Bearer dev-token</code>) in place; signing not implemented</td></tr>
+      <tr><td class="em">Capital event persistence</td><td class="bad">&#9675; Pending</td><td>Activity defined, DB writes not implemented post-approval</td></tr>
+      <tr><td class="em">Report generation</td><td class="bad">&#9675; Pending</td><td>Manual report creation via DB seed; auto-generation not built</td></tr>
+    </tbody>
+  </table>
+
+  <div class="co co-g" style="margin-top:1rem">
+    <span class="cl">Next three things to build</span>
+    1. <strong>Wire Temporal workflow from API</strong> &mdash; after a successful upload + extract, start <code style="font-family:var(--mono)">ingestDocumentWorkflow</code> instead of the current direct background call. 2. <strong>Real JWT auth</strong> &mdash; replace <code style="font-family:var(--mono)">Bearer dev-token</code> bypass with proper signing + refresh tokens. 3. <strong>Capital event persistence</strong> &mdash; on approval, write the CapitalEvent record that feeds portfolio analytics.
+  </div>
+</div>
+
+<!-- 12 CURSOR PROMPT -->
+<div class="sband"><b>12</b> Cursor Prompt</div>
+<div class="sec" id="cursor">
+  <div class="ey">Save as .cursorrules at monorepo root</div>
+  <h2 class="st">Full project context <em>for Cursor AI</em></h2>
+  <p class="si">Paste this into <code style="font-family:var(--mono);color:var(--teal2)">.cursorrules</code> at the monorepo root. Cursor reads this for every file in the repo. First command after setup: <em style="color:var(--white)">&ldquo;Set up the monorepo following .cursorrules. Start with pnpm workspaces, turbo.json, and the apps/extractor FastAPI skeleton with POST /classify and POST /extract.&rdquo;</em></p>
+  <div class="prompt-box">
+    <div class="prompt-hd"><span class="prompt-lbl">&#128203; .cursorrules &mdash; Portscope</span><button class="copy-btn" onclick="copyPrompt()">Copy</button></div>
+    <div class="prompt-body" id="prompt-text"># Portscope — Project Context for Cursor AI
+
+## Role
+You are a senior full-stack engineer building Portscope — an AI-powered family
+office autopilot service. You have deep expertise in TypeScript/NestJS, Python
+ML pipelines, AWS infrastructure, and financial services domain knowledge
+(alternative investments, capital calls, fund administration).
+
+## What Portscope IS
+Portscope is NOT a portfolio dashboard. It is an async document processing and
+outcome-delivery service that REPLACES the fund administrator for small family
+offices (<$500M AUM).
+
+The product:
+1. Alternative investment documents arrive via upload or email
+2. Python FastAPI extractor parses PDF with pdfplumber, sends to LLM for extraction
+3. LLM backend is provider-agnostic: Ollama (free local), OpenRouter, Anthropic,
+   OpenAI, HuggingFace, vLLM, or any OpenAI-compatible endpoint — set via LLM_PROVIDER
+4. Temporal workflows orchestrate review, persistence, and delivery
+5. Reconciled quarterly reports are delivered to families by email + portal
+6. Humans barely touch any interface. The autopilot does the work.
+
+Business model (Sequoia "Services as Software" thesis):
+- We sell OUTCOMES: closed books, processed documents, delivered reports
+- We charge per document + monthly retainer per entity under management
+- We REPLACE the fund admin ($3-8K/mo), not add to their software stack
+- No DGX Spark required: LLM is provider-agnostic, start free with Ollama
+
+## Monorepo structure (pnpm workspaces + Turborepo)
+portscope-dev/
+├── apps/
+│   ├── api/          # NestJS 10 API (AWS ECS Fargate)
+│   ├── web/          # Next.js 14 App Router — review UI + client portal (Vercel)
+│   ├── extractor/    # Python FastAPI — Python FastAPI extractor :8001
+│   └── worker/       # Temporal workflow workers (AWS ECS Fargate)
+├── packages/
+│   ├── db/           # Prisma 5 schema + generated client
+│   ├── shared/       # Shared TypeScript types (ExtractedField, Document, etc.)
+│   └── extractor-client/  # TypeScript HTTP client for Python extractor
+├── infra/            # AWS CDK v2 TypeScript
+└── ml/               # Fine-tuning pipeline (optional, future)
+
+## Web app route structure (apps/web)
+Two route groups with separate auth:
+(review)/ — Internal staff only (Sarah, ops manager)
+  /review           → Review Queue: inbox-style, pending docs
+  /review/documents/[id] → PDF + extracted fields side-by-side
+  /review/reports/[id]   → Draft report approval before delivery to family
+  /analyst               → AI analyst RAG chat (staff only, not in client portal)
+(portal)/ — Client read-only (James, family principal)
+  /portal           → Net worth + 4 stats + report download (PRIMARY screen)
+  /portal/reports   → Report history with PDF downloads
+  /portal/funds     → Fund list with IRR/TVPI/DPI
+  Entry: magic link email ONLY. No password. 7-day session cookie.
+
+## Tech stack — NEVER deviate without discussion
+
+TypeScript stack (apps/api, apps/web, apps/worker):
+- NestJS 10 for the API (not Express, not Fastify directly)
+- Prisma 5 ORM (never raw SQL queries, never TypeORM)
+- Temporal TypeScript SDK for ALL async workflows (never Bull/BullMQ/SQS polling)
+- Next.js 14 App Router (never Pages Router)
+- shadcn/ui + Tailwind CSS for UI (never MUI, Chakra, Ant Design)
+- zod for ALL input validation — both API routes and form inputs
+- Auth.js v5 (magic links for portal, JWT for staff review UI)
+- AWS CDK v2 TypeScript for all infrastructure
+
+Python stack (apps/extractor):
+- FastAPI + uvicorn (not Flask, not Django)
+- Pydantic v2 for ALL request/response schemas
+- pdfplumber for PDF text extraction (not Docling, not Unstructured)
+- providers.py abstraction for LLM calls (Ollama / OpenRouter / Anthropic / etc.)
+- LLM_PROVIDER env var controls which backend is used — no code changes to swap
+- Default: Ollama with llama3.1:8b (free, local, no GPU required)
+
+Infrastructure (local dev via Docker Compose):
+- PostgreSQL 16 + pgvector: main database (port 5432)
+- Temporal 1.25: workflow orchestration (port 7233 + UI at 8080)
+- Redis 7: Temporal dependency (port 6379)
+- MinIO: S3-compatible object storage (port 9000 + console at 9001)
+- Python FastAPI extractor: runs separately, port 8001
+- NestJS API: port 3001
+- Next.js 15: port 3000
+
+Production (when ready):
+- Swap MinIO for real S3 (or Cloudflare R2, DigitalOcean Spaces)
+- Swap LLM_PROVIDER for preferred cloud provider
+- Container deployment via ECS, Fly.io, Railway, or similar
+
+## Core domain model (Prisma)
+FamilyOffice — top-level tenant (everything scoped to this)
+Entity — trust, LLC, SPV, individual; nested tree (self-referential parentId)
+Fund — PE/VC/RE/credit fund (manager, vintage, strategy, geography, currency)
+Holding — one Entity's position in one Fund (commitment, called, distributed, NAV)
+CapitalEvent — CALL or DISTRIBUTION, sourced from a Document
+Document — ingested PDF (type, status, s3Key, extraction JSON, workflowId)
+DocumentChunk — pgvector embeddings for RAG queries
+
+## Document pipeline (ingest.workflow.ts)
+1. Document arrives (SES email or S3 upload)
+2. classifyDocument → CAPITAL_CALL | DISTRIBUTION | NAV_STATEMENT | K1 | FUND_REPORT
+3. extractDocument → calls DGX extractor → fields[] with { value, confidence: 0-1 }
+4. If any field.confidence < 0.85 → notifyReview → await approvalSignal (7 days max)
+5. storeExtraction → persist Document record with extraction JSON
+6. If CAPITAL_CALL or DISTRIBUTION → persistCapitalEvents → create CapitalEvent record
+7. Store corrections in training dataset if Sarah made any edits
+
+## Code standards
+
+TypeScript:
+- Strict mode always on. No `any` types anywhere.
+- Money: always Decimal/string in API/DB, never float. Use decimal.js.
+- Dates: UTC ISO strings in API responses, DateTime in Prisma.
+- CRITICAL: EVERY database query MUST include `familyOfficeId: session.familyOfficeId`
+  in the WHERE clause. No exceptions. Use a NestJS interceptor to inject from JWT.
+- Services own business logic. Controllers handle HTTP only.
+
+Python:
+- Type hints everywhere. mypy --strict in CI.
+- All request/response types are Pydantic v2 BaseModel subclasses.
+- providers.py factory returns correct LLM provider based on LLM_PROVIDER env var.
+- Every extracted field: { "value": Any, "confidence": float }
+- pdfplumber for PDF text; boto3 for S3/MinIO download.
+
+Security (dev):
+- Dev auth bypass: `Bearer dev-token` maps to seeded staff user — remove before prod
+- Portal: magic links with 7-day expiry, httpOnly cookies
+- MinIO local: no credentials needed beyond minioadmin/minioadmin in dev
+- LLM calls are outbound only — no inbound webhooks from LLM providers
+
+## Confidence scoring — first-class UX concern
+Thresholds drive what users see and what requires action:
+- >= 0.95: auto-approve (green badge, no action needed, still visible in queue)
+- 0.85-0.94: accept but surface (blue badge, visible but no action required)
+- 0.70-0.84: flag for review (amber badge, field is editable in review UI)
+- < 0.70: require correction (red badge, cannot approve without editing field)
+
+## MVP scope (do NOT build these at MVP)
+- Real-time trading or order management
+- General ledger / full accounting system
+- Custodian API integrations (file upload only at MVP)
+- Mobile native app (mobile web via portal is sufficient)
+- Social features or collaboration in client portal
+- Self-serve onboarding (manual white-glove for first 3 pilot clients)
+- Fine-tuning pipeline (use hosted LLMs until you have enough correction data)
+
+## Current state (as of April 2026)
+Core pipeline is built and wired. Next priorities:
+1. Wire Temporal workflow from the upload API endpoint (currently runs background directly)
+2. Implement real JWT auth (replace Bearer dev-token bypass)
+3. Capital event persistence on document approval (CapitalEvent DB writes)
+4. Email notifications via notifyReview activity (currently a stub)
+
+To run locally:
+  docker compose up -d
+  pnpm install && cd packages/db && npx prisma generate && npx prisma db push
+  LLM_PROVIDER=ollama uvicorn src.api.main:app --port 8001 (in apps/extractor)
+  pnpm dev
+  Open http://localhost:3000/queue</div>
+  </div>
+</div>
+
+<div class="footer">
+  <strong>PORTSCOPE</strong> &nbsp;&middot;&nbsp; Master Strategy &amp; Implementation &nbsp;&middot;&nbsp; April 2026 &nbsp;&middot;&nbsp; Confidential
+</div>
+
+<script>
+// Tab switching for frontend files
+document.querySelectorAll('.ftab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const idx = tab.dataset.tab
+    document.querySelectorAll('.ftab').forEach(t => t.classList.remove('on'))
+    document.querySelectorAll('.ftab-pane').forEach(p => p.classList.remove('on'))
+    tab.classList.add('on')
+    const pane = document.querySelector('.ftab-pane[data-pane="' + idx + '"]')
+    if (pane) pane.classList.add('on')
+  })
+})
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('.sec[id]')
+const navAs = document.querySelectorAll('.nav-a')
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navAs.forEach(a => a.classList.remove('active'))
+      const a = document.querySelector('.nav-a[href="#' + e.target.id + '"]')
+      if (a) a.classList.add('active')
+    }
+  })
+}, { threshold: 0.2, rootMargin: '-48px 0px -60% 0px' })
+sections.forEach(s => observer.observe(s))
+
+// Copy cursor prompt
+function copyPrompt() {
+  const text = document.getElementById('prompt-text').innerText
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn')
+    const orig = btn.textContent
+    btn.textContent = 'Copied!'
+    setTimeout(() => { btn.textContent = orig }, 2000)
+  })
+}
+</script>
+</body>
+</html>
